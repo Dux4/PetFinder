@@ -7,21 +7,13 @@ class AnnouncementController {
         pet_name,
         description,
         type,
-        contact_name,
-        contact_phone,
-        contact_email,
+        neighborhood,
         latitude,
-        longitude,
-        address
+        longitude
       } = req.body;
 
-      // Validações básicas
-      if (!pet_name || !description || !type || !contact_name || !contact_phone || !contact_email || !latitude || !longitude) {
+      if (!pet_name || !description || !type || !neighborhood) {
         return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
-      }
-
-      if (!['perdido', 'encontrado'].includes(type)) {
-        return res.status(400).json({ error: 'Tipo deve ser "perdido" ou "encontrado"' });
       }
 
       const image_url = req.file ? `/uploads/${req.file.filename}` : null;
@@ -30,13 +22,11 @@ class AnnouncementController {
         pet_name,
         description,
         type,
-        contact_name,
-        contact_phone,
-        contact_email,
+        user_id: req.user.id,
         image_url,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        address
+        neighborhood,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
       };
 
       const announcement = await Announcement.create(announcementData);
@@ -53,7 +43,8 @@ class AnnouncementController {
 
   static async getAll(req, res) {
     try {
-      const announcements = await Announcement.findAll();
+      const { status = 'ativo' } = req.query;
+      const announcements = await Announcement.findAll(status);
       res.json(announcements);
     } catch (error) {
       console.error('Erro ao buscar anúncios:', error);
@@ -61,23 +52,31 @@ class AnnouncementController {
     }
   }
 
-  static async getNearby(req, res) {
+  static async getMyAnnouncements(req, res) {
     try {
-      const { latitude, longitude, radius = 10 } = req.query;
-
-      if (!latitude || !longitude) {
-        return res.status(400).json({ error: 'Latitude e longitude são obrigatórias' });
-      }
-
-      const announcements = await Announcement.findNearby(
-        parseFloat(latitude),
-        parseFloat(longitude),
-        parseFloat(radius)
-      );
-
+      const { status } = req.query;
+      const announcements = await Announcement.findByUserId(req.user.id, status);
       res.json(announcements);
     } catch (error) {
-      console.error('Erro ao buscar anúncios próximos:', error);
+      console.error('Erro ao buscar meus anúncios:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
+
+  static async updateStatus(req, res) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const announcement = await Announcement.updateStatus(id, status, req.user.id);
+      
+      if (!announcement) {
+        return res.status(404).json({ error: 'Anúncio não encontrado ou você não tem permissão' });
+      }
+
+      res.json({ message: 'Status atualizado com sucesso', announcement });
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
