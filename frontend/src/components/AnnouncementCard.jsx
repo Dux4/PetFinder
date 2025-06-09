@@ -9,28 +9,16 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
   const isOwner = user && announcement.user_id === user.id;
 
   const handleStatusUpdate = async (newStatus, e) => {
-    e.stopPropagation(); // Evitar que o click abra os detalhes
+    e.stopPropagation();
     if (!isOwner) return;
 
     setUpdating(true);
     try {
-      // Adicionar validação e logs para debug
-      console.log('Atualizando anúncio:', announcement.id, 'para status:', newStatus);
-      
       const response = await updateAnnouncementStatus(announcement.id, newStatus);
-      console.log('Resposta da API:', response);
       
-      // Verificar se a resposta foi bem-sucedida
       if (response && (response.success || response.data)) {
-        // Atualizar o estado local imediatamente para feedback visual
         announcement.status = newStatus;
-        
-        // Chamar callback para atualizar a lista
-        if (onStatusUpdate) {
-          onStatusUpdate();
-        }
-        
-        // Mostrar mensagem de sucesso
+        onStatusUpdate?.();
         alert('Status atualizado com sucesso!');
       } else {
         throw new Error('Resposta inválida da API');
@@ -38,31 +26,13 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       
-      // Mensagem de erro mais específica
       let errorMessage = 'Erro ao atualizar status do anúncio';
-      
-      if (error.response) {
-        // Erro HTTP
-        console.error('Status HTTP:', error.response.status);
-        console.error('Dados do erro:', error.response.data);
-        
-        if (error.response.status === 401) {
-          errorMessage = 'Você não tem permissão para atualizar este anúncio';
-        } else if (error.response.status === 404) {
-          errorMessage = 'Anúncio não encontrado';
-        } else if (error.response.status >= 500) {
-          errorMessage = 'Erro interno do servidor. Tente novamente mais tarde';
-        } else if (error.response.data?.message) {
-          errorMessage = error.response.data.message;
-        }
-      } else if (error.request) {
-        // Erro de rede
-        console.error('Erro de rede:', error.request);
-        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente';
-      } else {
-        // Outro tipo de erro
-        console.error('Erro:', error.message);
-        errorMessage = `Erro inesperado: ${error.message}`;
+      if (error.response?.status === 401) {
+        errorMessage = 'Você não tem permissão para atualizar este anúncio';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Anúncio não encontrado';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Erro interno do servidor. Tente novamente mais tarde';
       }
       
       alert(errorMessage);
@@ -73,9 +43,7 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
 
   const handleViewDetail = (e) => {
     e.stopPropagation();
-    if (onViewDetail) {
-      onViewDetail(announcement);
-    }
+    onViewDetail?.(announcement);
   };
 
   const formatDate = (dateString) => {
@@ -85,8 +53,7 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
         month: '2-digit',
         year: 'numeric'
       });
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
+    } catch {
       return 'Data inválida';
     }
   };
@@ -102,14 +69,13 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
             alt={announcement.pet_name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
-              console.error('Erro ao carregar imagem:', e);
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
             }}
           />
         ) : null}
         
-        {/* Fallback quando não há imagem ou erro no carregamento */}
+        {/* Fallback quando não há imagem */}
         <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ${announcement.image_url ? 'hidden' : ''}`}>
           <div className="text-center text-gray-500">
             <div className="text-4xl mb-2">🐾</div>
@@ -166,7 +132,7 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
         <div className="space-y-2">
           <button
             onClick={handleViewDetail}
-            className="w-full bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors font-medium border border-blue-700 hover:border-blue-800"
           >
             Ver Detalhes
           </button>
@@ -175,7 +141,7 @@ const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onVi
             <button
               onClick={(e) => handleStatusUpdate('encontrado', e)}
               disabled={updating}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed border border-green-600 hover:border-green-700"
             >
               {updating ? 'Atualizando...' : '✅ Marcar como Encontrado'}
             </button>

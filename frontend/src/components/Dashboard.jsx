@@ -13,19 +13,12 @@ const Dashboard = () => {
   const [myAnnouncements, setMyAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('todos');
-  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    if (selectedAnnouncementId) {
-      loadAnnouncementDetail(selectedAnnouncementId);
-    }
-  }, [selectedAnnouncementId]);
 
   const loadData = async () => {
     try {
@@ -41,65 +34,82 @@ const Dashboard = () => {
       setMyAnnouncements(myAnnounces);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadAnnouncementDetail = async (id) => {
+  const handleViewDetail = async (announcementOrId) => {
     try {
       setLoadingDetail(true);
+      
+      // Se recebeu um objeto anúncio completo, usar diretamente
+      if (typeof announcementOrId === 'object' && announcementOrId?.id) {
+        setSelectedAnnouncement(announcementOrId);
+        return;
+      }
+      
+      // Se recebeu um ID, tentar encontrar nos dados locais primeiro
+      const id = parseInt(announcementOrId);
+      const allLoadedAnnouncements = [...announcements, ...foundPets, ...myAnnouncements];
+      const existingAnnouncement = allLoadedAnnouncements.find(ann => ann.id === id);
+      
+      if (existingAnnouncement) {
+        setSelectedAnnouncement(existingAnnouncement);
+        return;
+      }
+      
+      // Se não encontrou localmente, buscar na API
       const announcement = await getAnnouncementById(id);
+      if (!announcement) throw new Error('Anúncio não encontrado');
+      
       setSelectedAnnouncement(announcement);
+      
     } catch (error) {
-      console.error('Erro ao carregar detalhes do anúncio:', error);
+      console.error('Erro ao carregar detalhes:', error);
       alert('Erro ao carregar detalhes do anúncio');
-      setSelectedAnnouncementId(null);
     } finally {
       setLoadingDetail(false);
     }
   };
 
-  const handleViewDetail = (announcement) => {
-    setSelectedAnnouncementId(announcement.id);
-  };
-
   const handleBackFromDetail = () => {
-    setSelectedAnnouncementId(null);
     setSelectedAnnouncement(null);
-    loadData(); // Recarregar dados quando voltar
   };
 
   const tabs = [
     { id: 'todos', label: 'Todos os Anúncios', icon: '📋', count: announcements.length },
     { id: 'meus', label: 'Meus Anúncios', icon: '👤', count: myAnnouncements.length },
+    { id: 'criar', label: 'Criar Anúncio', icon: '➕' },
+    { id: 'mapa', label: 'Mapa', icon: '🗺️' },
     { id: 'encontrados', label: 'Pets Encontrados', icon: '✅', count: foundPets.length },
-    { id: 'mapa', label: 'Mapa', icon: '🗺️', count: null },
-    { id: 'criar', label: 'Criar Anúncio', icon: '➕', count: null }
   ];
 
-  // Mostrar detalhes do anúncio
-  if (selectedAnnouncementId) {
-    if (loadingDetail) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando detalhes...</p>
-          </div>
+  // Loading state para detalhes
+  if (loadingDetail) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando detalhes...</p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    if (selectedAnnouncement) {
-      return (
-        <AnnouncementDetail 
-          announcement={selectedAnnouncement}
-          onBack={handleBackFromDetail}
-          onStatusUpdate={loadData}
-        />
-      );
-    }
+  // Mostrar detalhes do anúncio
+  if (selectedAnnouncement) {
+    return (
+      <AnnouncementDetail 
+        announcement={selectedAnnouncement}
+        onBack={handleBackFromDetail}
+        onStatusUpdate={() => {
+          loadData();
+          handleBackFromDetail();
+        }}
+      />
+    );
   }
 
   return (
@@ -122,7 +132,7 @@ const Dashboard = () => {
               </div>
               <button
                 onClick={logout}
-                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm"
+                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40"
               >
                 Sair
               </button>
@@ -141,15 +151,17 @@ const Dashboard = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-primary-500 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white shadow-md border border-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800 border border-transparent'
                 }`}
               >
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'
+                {tab.count !== undefined && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    activeTab === tab.id 
+                      ? 'bg-blue-500 text-white border border-blue-400' 
+                      : 'bg-gray-200 text-gray-700'
                   }`}>
                     {tab.count}
                   </span>
