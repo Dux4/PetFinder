@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import './App.css'
+import './index.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';

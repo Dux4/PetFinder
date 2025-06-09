@@ -2,259 +2,186 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { updateAnnouncementStatus } from '../services/api';
 
-const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate }) => {
+const AnnouncementCard = ({ announcement, showOwnerActions, onStatusUpdate, onViewDetail }) => {
   const { user } = useAuth();
   const [updating, setUpdating] = useState(false);
 
   const isOwner = user && announcement.user_id === user.id;
 
-  const handleStatusUpdate = async (newStatus) => {
+  const handleStatusUpdate = async (newStatus, e) => {
+    e.stopPropagation(); // Evitar que o click abra os detalhes
     if (!isOwner) return;
 
     setUpdating(true);
     try {
-      await updateAnnouncementStatus(announcement.id, newStatus);
-      if (onStatusUpdate) onStatusUpdate();
+      // Adicionar validação e logs para debug
+      console.log('Atualizando anúncio:', announcement.id, 'para status:', newStatus);
+      
+      const response = await updateAnnouncementStatus(announcement.id, newStatus);
+      console.log('Resposta da API:', response);
+      
+      // Verificar se a resposta foi bem-sucedida
+      if (response && (response.success || response.data)) {
+        // Atualizar o estado local imediatamente para feedback visual
+        announcement.status = newStatus;
+        
+        // Chamar callback para atualizar a lista
+        if (onStatusUpdate) {
+          onStatusUpdate();
+        }
+        
+        // Mostrar mensagem de sucesso
+        alert('Status atualizado com sucesso!');
+      } else {
+        throw new Error('Resposta inválida da API');
+      }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status do anúncio');
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Erro ao atualizar status do anúncio';
+      
+      if (error.response) {
+        // Erro HTTP
+        console.error('Status HTTP:', error.response.status);
+        console.error('Dados do erro:', error.response.data);
+        
+        if (error.response.status === 401) {
+          errorMessage = 'Você não tem permissão para atualizar este anúncio';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Anúncio não encontrado';
+        } else if (error.response.status >= 500) {
+          errorMessage = 'Erro interno do servidor. Tente novamente mais tarde';
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        // Erro de rede
+        console.error('Erro de rede:', error.request);
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente';
+      } else {
+        // Outro tipo de erro
+        console.error('Erro:', error.message);
+        errorMessage = `Erro inesperado: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setUpdating(false);
     }
   };
 
+  const handleViewDetail = (e) => {
+    e.stopPropagation();
+    if (onViewDetail) {
+      onViewDetail(announcement);
+    }
+  };
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return 'Data inválida';
+    }
   };
 
   return (
-    <div className="announcement-card">
-      {announcement.image_url && (
-        <div className="announcement-image-container">
+    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer"
+         onClick={handleViewDetail}>
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden">
+        {announcement.image_url ? (
           <img
             src={`http://localhost:3000${announcement.image_url}`}
             alt={announcement.pet_name}
-            className="announcement-image"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              console.error('Erro ao carregar imagem:', e);
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
           />
+        ) : null}
+        
+        {/* Fallback quando não há imagem ou erro no carregamento */}
+        <div className={`w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center ${announcement.image_url ? 'hidden' : ''}`}>
+          <div className="text-center text-gray-500">
+            <div className="text-4xl mb-2">🐾</div>
+            <p className="text-sm">Sem foto</p>
+          </div>
         </div>
-      )}
-      
-      <div className="announcement-content">
-        <div className="announcement-header">
-          <h3>{announcement.pet_name}</h3>
-          <span className={`announcement-type ${announcement.type}`}>
+        
+        {/* Status Badge */}
+        <div className="absolute top-3 right-3">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            announcement.type === 'perdido' 
+              ? 'bg-red-100 text-red-800' 
+              : 'bg-green-100 text-green-800'
+          }`}>
             {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
           </span>
         </div>
-        
-        <p className="announcement-description">{announcement.description}</p>
-        
-        <div className="announcement-location">
-          <strong>📍 Bairro:</strong> {announcement.neighborhood}, Salvador - BA
-        </div>
-        
-        <div className="announcement-contact">
-          <p><strong>Contato:</strong> {announcement.user?.name}</p>
-          <p><strong>Telefone:</strong> {announcement.user?.phone}</p>
-          <p><strong>Email:</strong> {announcement.user?.email}</p>
-        </div>
-        
-        <div className="announcement-footer">
-          <p className="announcement-date">
-            Publicado em {formatDate(announcement.created_at)}
-          </p>
-          
-          {announcement.status === 'encontrado' && announcement.found_date && (
-            <p className="found-date">
-              ✅ Encontrado em {formatDate(announcement.found_date)}
-            </p>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-xl font-bold text-gray-800 truncate">{announcement.pet_name || 'Nome não informado'}</h3>
+          {announcement.status === 'encontrado' && (
+            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium ml-2">
+              ✅ Encontrado
+            </span>
           )}
         </div>
 
-        {showOwnerActions && isOwner && announcement.status === 'ativo' && (
-          <div className="owner-actions">
+        <p className="text-gray-600 text-sm mb-4 line-clamp-3">{announcement.description || 'Sem descrição'}</p>
+
+        {/* Location */}
+        <div className="flex items-center text-gray-600 mb-4">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="text-sm">{announcement.neighborhood || 'Local não informado'}</span>
+        </div>
+
+        {/* Contact */}
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <p className="text-sm font-medium text-gray-800">{announcement.user?.name || 'Nome não informado'}</p>
+          <p className="text-sm text-gray-600">{announcement.user?.phone || 'Telefone não informado'}</p>
+        </div>
+
+        {/* Date */}
+        <p className="text-xs text-gray-500 mb-4">
+          Publicado em {formatDate(announcement.created_at)}
+        </p>
+
+        {/* Actions */}
+        <div className="space-y-2">
+          <button
+            onClick={handleViewDetail}
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg transition-colors font-medium"
+          >
+            Ver Detalhes
+          </button>
+
+          {showOwnerActions && isOwner && announcement.status === 'ativo' && (
             <button
-              onClick={() => handleStatusUpdate('encontrado')}
+              onClick={(e) => handleStatusUpdate('encontrado', e)}
               disabled={updating}
-              className="btn btn-found"
+              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updating ? 'Atualizando...' : '✅ Marcar como Encontrado'}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-      <style jsx>{`
-        .announcement-card {
-          background: white;
-          border-radius: 12px;
-          padding: 1.5rem;
-          margin-bottom: 1.5rem;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          transition: transform 0.2s ease;
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 1.5rem;
-          align-items: start;
-        }
-
-        .announcement-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-
-        .announcement-image-container {
-          width: 200px;
-          height: 200px;
-          flex-shrink: 0;
-        }
-
-        .announcement-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-
-        .announcement-content {
-          min-width: 0;
-        }
-
-        .announcement-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        .announcement-header h3 {
-          color: #667eea;
-          margin: 0;
-          font-size: 1.4rem;
-        }
-
-        .announcement-type {
-          display: inline-block;
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-          font-size: 0.9rem;
-          font-weight: 600;
-        }
-
-        .announcement-type.perdido {
-          background: #fee2e2;
-          color: #dc2626;
-        }
-
-        .announcement-type.encontrado {
-          background: #dcfce7;
-          color: #16a34a;
-        }
-
-        .announcement-description {
-          margin: 1rem 0;
-          line-height: 1.6;
-          color: #555;
-        }
-
-        .announcement-location {
-          margin: 1rem 0;
-          padding: 0.75rem;
-          background: #f8f9fa;
-          border-radius: 8px;
-          color: #555;
-        }
-
-        .announcement-contact {
-          margin: 1rem 0;
-          padding: 1rem;
-          background: #f0f9ff;
-          border-radius: 8px;
-          border-left: 4px solid #667eea;
-        }
-
-        .announcement-contact p {
-          margin: 0.25rem 0;
-          color: #374151;
-        }
-
-        .announcement-footer {
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid #e5e7eb;
-        }
-
-        .announcement-date {
-          color: #666;
-          font-size: 0.9rem;
-          margin: 0;
-        }
-
-        .found-date {
-          color: #16a34a;
-          font-weight: 600;
-          margin: 0.5rem 0 0 0;
-          font-size: 0.9rem;
-        }
-
-        .owner-actions {
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 2px dashed #e5e7eb;
-        }
-
-        .btn {
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .btn-found {
-          background: #16a34a;
-          color: white;
-          width: 100%;
-        }
-
-        .btn-found:hover:not(:disabled) {
-          background: #15803d;
-          transform: translateY(-1px);
-        }
-
-        .btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        @media (max-width: 768px) {
-          .announcement-card {
-            grid-template-columns: 1fr;
-            text-align: center;
-          }
-
-          .announcement-image-container {
-            width: 100%;
-            height: 250px;
-            justify-self: center;
-          }
-
-          .announcement-header {
-            justify-content: center;
-            text-align: center;
-          }
-        }
-      `}</style>
     </div>
   );
 };

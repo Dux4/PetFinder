@@ -48,6 +48,11 @@ export const getAllAnnouncements = async (status = 'ativo') => {
   return response.data;
 };
 
+export const getAnnouncementById = async (id) => {
+  const response = await api.get(`/announcements/${id}`);
+  return response.data;
+};
+
 export const getMyAnnouncements = async (status) => {
   const response = await api.get('/my-announcements', {
     params: status ? { status } : {}
@@ -68,6 +73,13 @@ export const getNeighborhoods = async () => {
 
 export const getLocationFromCoords = async (latitude, longitude) => {
   const response = await api.post('/get-location', { latitude, longitude });
+  return response.data;
+};
+
+export const getNeighborhoodCoords = async (neighborhood) => {
+  const response = await api.get('/neighborhood-coords', {
+    params: { neighborhood }
+  });
   return response.data;
 };
 

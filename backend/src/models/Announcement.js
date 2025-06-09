@@ -28,6 +28,8 @@ const neighborhoodCoords = {
 
 class Announcement {
   static async create(data) {
+    console.log('create - Dados recebidos:', data);
+    
     // Se não tem coordenadas, usar as do bairro
     let finalLat = data.latitude;
     let finalLng = data.longitude;
@@ -59,11 +61,22 @@ class Announcement {
       finalLng
     ];
 
-    const result = await pool.query(query, values);
-    return result.rows[0];
+    console.log('create - Query:', query);
+    console.log('create - Valores:', values);
+
+    try {
+      const result = await pool.query(query, values);
+      console.log('create - Sucesso:', result.rows[0]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('create - Erro na query:', error);
+      throw error;
+    }
   }
 
   static async findAll(status = 'ativo') {
+    console.log('findAll - Status solicitado:', status);
+    
     const query = `
       SELECT a.*, u.name as user_name, u.phone as user_phone, u.email as user_email
       FROM announcements a
@@ -72,18 +85,27 @@ class Announcement {
       ORDER BY a.created_at DESC
     `;
     
-    const result = await pool.query(query, [status]);
-    return result.rows.map(row => ({
-      ...row,
-      user: {
-        name: row.user_name,
-        phone: row.user_phone,
-        email: row.user_email
-      }
-    }));
+    try {
+      const result = await pool.query(query, [status]);
+      console.log('findAll - Encontrados:', result.rows.length, 'anúncios');
+      
+      return result.rows.map(row => ({
+        ...row,
+        user: {
+          name: row.user_name,
+          phone: row.user_phone,
+          email: row.user_email
+        }
+      }));
+    } catch (error) {
+      console.error('findAll - Erro na query:', error);
+      throw error;
+    }
   }
 
   static async findByUserId(userId, status = null) {
+    console.log('findByUserId - UserId:', userId, 'Status:', status);
+    
     let query = `
       SELECT a.*, u.name as user_name, u.phone as user_phone, u.email as user_email
       FROM announcements a
@@ -100,28 +122,96 @@ class Announcement {
     
     query += ' ORDER BY a.created_at DESC';
     
-    const result = await pool.query(query, params);
-    return result.rows.map(row => ({
-      ...row,
-      user: {
-        name: row.user_name,
-        phone: row.user_phone,
-        email: row.user_email
-      }
-    }));
+    try {
+      const result = await pool.query(query, params);
+      console.log('findByUserId - Encontrados:', result.rows.length, 'anúncios');
+      
+      return result.rows.map(row => ({
+        ...row,
+        user: {
+          name: row.user_name,
+          phone: row.user_phone,
+          email: row.user_email
+        }
+      }));
+    } catch (error) {
+      console.error('findByUserId - Erro na query:', error);
+      throw error;
+    }
   }
 
   static async updateStatus(id, status, userId) {
+    console.log('updateStatus - Dados recebidos:', {
+      id,
+      idType: typeof id,
+      status,
+      statusType: typeof status,
+      userId,
+      userIdType: typeof userId
+    });
+
+    // Garantir que os tipos estão corretos
+    const numericId = parseInt(id, 10);
+    const numericUserId = parseInt(userId, 10);
+    const stringStatus = String(status).toLowerCase();
+
+    // Validar valores
+    if (isNaN(numericId) || isNaN(numericUserId)) {
+      console.error('updateStatus - IDs inválidos:', { id, userId });
+      throw new Error('IDs devem ser números válidos');
+    }
+
+    if (!['ativo', 'encontrado', 'inativo'].includes(stringStatus)) {
+      console.error('updateStatus - Status inválido:', stringStatus);
+      throw new Error('Status deve ser: ativo, encontrado ou inativo');
+    }
+
+    console.log('updateStatus - Chamando Announcement.updateStatus com:', {
+      id: numericId,
+      status: stringStatus,
+      userId: numericUserId
+    });
+
+    // Preparar parâmetros com tipos explícitos
+    const params = [stringStatus, numericId, numericUserId];
+    
+    console.log('updateStatus - Parâmetros:', {
+      id: numericId,
+      idType: typeof numericId,
+      status: stringStatus,
+      statusType: typeof stringStatus,
+      userId: numericUserId,
+      userIdType: typeof numericUserId
+    });
+
     const query = `
-      UPDATE announcements 
-      SET status = $1, updated_at = CURRENT_TIMESTAMP, 
-          found_date = CASE WHEN $1 = 'encontrado' THEN CURRENT_TIMESTAMP ELSE found_date END
-      WHERE id = $2 AND user_id = $3
+      UPDATE announcements
+      SET status = $1::VARCHAR,
+          updated_at = CURRENT_TIMESTAMP,
+          found_date = CASE WHEN $1::VARCHAR = 'encontrado' THEN CURRENT_TIMESTAMP ELSE found_date END
+      WHERE id = $2::INTEGER AND user_id = $3::INTEGER
       RETURNING *
     `;
-    
-    const result = await pool.query(query, [status, id, userId]);
-    return result.rows[0];
+
+    console.log('updateStatus - Query:');
+    console.log(query);
+    console.log('updateStatus - Valores:', params);
+
+    try {
+      const result = await pool.query(query, params);
+      
+      if (result.rows.length === 0) {
+        console.log('updateStatus - Nenhum registro atualizado');
+        return null;
+      }
+
+      console.log('updateStatus - Sucesso:', result.rows[0]);
+      return result.rows[0];
+    } catch (error) {
+      console.error('updateStatus - Erro na query:', error);
+      console.error('updateStatus - Erro:', error);
+      throw error;
+    }
   }
 }
 

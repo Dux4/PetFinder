@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import AnnouncementForm from './AnnouncementForm';
 import AnnouncementList from './AnnouncementList';
+import AnnouncementDetail from './AnnouncementDetail';
 import Map from './Map';
-import { getAllAnnouncements, getMyAnnouncements } from '../services/api';
+import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../services/api';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -12,10 +13,19 @@ const Dashboard = () => {
   const [myAnnouncements, setMyAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('todos');
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState(null);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedAnnouncementId) {
+      loadAnnouncementDetail(selectedAnnouncementId);
+    }
+  }, [selectedAnnouncementId]);
 
   const loadData = async () => {
     try {
@@ -36,57 +46,122 @@ const Dashboard = () => {
     }
   };
 
-  return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1>🐾 Pet Finder Salvador</h1>
-            <p>Olá, {user.name}!</p>
+  const loadAnnouncementDetail = async (id) => {
+    try {
+      setLoadingDetail(true);
+      const announcement = await getAnnouncementById(id);
+      setSelectedAnnouncement(announcement);
+    } catch (error) {
+      console.error('Erro ao carregar detalhes do anúncio:', error);
+      alert('Erro ao carregar detalhes do anúncio');
+      setSelectedAnnouncementId(null);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const handleViewDetail = (announcement) => {
+    setSelectedAnnouncementId(announcement.id);
+  };
+
+  const handleBackFromDetail = () => {
+    setSelectedAnnouncementId(null);
+    setSelectedAnnouncement(null);
+    loadData(); // Recarregar dados quando voltar
+  };
+
+  const tabs = [
+    { id: 'todos', label: 'Todos os Anúncios', icon: '📋', count: announcements.length },
+    { id: 'meus', label: 'Meus Anúncios', icon: '👤', count: myAnnouncements.length },
+    { id: 'encontrados', label: 'Pets Encontrados', icon: '✅', count: foundPets.length },
+    { id: 'mapa', label: 'Mapa', icon: '🗺️', count: null },
+    { id: 'criar', label: 'Criar Anúncio', icon: '➕', count: null }
+  ];
+
+  // Mostrar detalhes do anúncio
+  if (selectedAnnouncementId) {
+    if (loadingDetail) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando detalhes...</p>
           </div>
-          <div className="header-right">
-            <span>{user.email}</span>
-            <button onClick={logout} className="btn btn-logout">
-              Sair
-            </button>
+        </div>
+      );
+    }
+
+    if (selectedAnnouncement) {
+      return (
+        <AnnouncementDetail 
+          announcement={selectedAnnouncement}
+          onBack={handleBackFromDetail}
+          onStatusUpdate={loadData}
+        />
+      );
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="gradient-primary shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-4">
+              <div className="text-4xl">🐾</div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">Pet Finder Salvador</h1>
+                <p className="text-blue-100">Olá, {user.name}!</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:block text-right text-blue-100">
+                <p className="font-medium">{user.name}</p>
+                <p className="text-sm opacity-80">{user.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm"
+              >
+                Sair
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <nav className="dashboard-nav">
-        <button 
-          className={activeTab === 'todos' ? 'active' : ''}
-          onClick={() => setActiveTab('todos')}
-        >
-          📋 Todos os Anúncios ({announcements.length})
-        </button>
-        <button 
-          className={activeTab === 'meus' ? 'active' : ''}
-          onClick={() => setActiveTab('meus')}
-        >
-          👤 Meus Anúncios ({myAnnouncements.length})
-        </button>
-        <button 
-          className={activeTab === 'encontrados' ? 'active' : ''}
-          onClick={() => setActiveTab('encontrados')}
-        >
-          ✅ Pets Encontrados ({foundPets.length})
-        </button>
-        <button 
-          className={activeTab === 'mapa' ? 'active' : ''}
-          onClick={() => setActiveTab('mapa')}
-        >
-          🗺️ Mapa
-        </button>
-        <button 
-          className={activeTab === 'criar' ? 'active' : ''}
-          onClick={() => setActiveTab('criar')}
-        >
-          ➕ Criar Anúncio
-        </button>
+      {/* Navigation Tabs */}
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 overflow-x-auto py-4">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.count !== null && (
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </nav>
 
-      <main className="dashboard-main">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'todos' && (
           <AnnouncementList 
             announcements={announcements} 
@@ -94,6 +169,7 @@ const Dashboard = () => {
             onRefresh={loadData}
             title="Todos os Anúncios Ativos"
             showOwnerActions={false}
+            onViewDetail={handleViewDetail}
           />
         )}
         
@@ -104,6 +180,7 @@ const Dashboard = () => {
             onRefresh={loadData}
             title="Meus Anúncios"
             showOwnerActions={true}
+            onViewDetail={handleViewDetail}
           />
         )}
         
@@ -114,136 +191,18 @@ const Dashboard = () => {
             onRefresh={loadData}
             title="Pets Encontrados pela Comunidade"
             showOwnerActions={false}
+            onViewDetail={handleViewDetail}
           />
         )}
         
         {activeTab === 'mapa' && (
-          <Map announcements={announcements} />
+          <Map announcements={announcements} onViewDetail={handleViewDetail} />
         )}
         
         {activeTab === 'criar' && (
           <AnnouncementForm onSuccess={loadData} />
         )}
       </main>
-
-      <style jsx>{`
-        .dashboard {
-          min-height: 100vh;
-          background: #f5f5f5;
-        }
-
-        .dashboard-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 1.5rem 2rem;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .header-left h1 {
-          font-size: 2rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .header-left p {
-          opacity: 0.9;
-          font-size: 1.1rem;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .header-right span {
-          opacity: 0.8;
-        }
-
-        .btn-logout {
-          background: rgba(255,255,255,0.2);
-          color: white;
-          border: 1px solid rgba(255,255,255,0.3);
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .btn-logout:hover {
-          background: rgba(255,255,255,0.3);
-        }
-
-        .dashboard-nav {
-          background: white;
-          padding: 1rem 2rem;
-          display: flex;
-          gap: 1rem;
-          overflow-x: auto;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .dashboard-nav button {
-          padding: 0.75rem 1.5rem;
-          border: 2px solid #667eea;
-          background: white;
-          color: #667eea;
-          border-radius: 25px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.3s ease;
-          white-space: nowrap;
-          min-width: fit-content;
-        }
-
-        .dashboard-nav button:hover {
-          background: #667eea;
-          color: white;
-          transform: translateY(-2px);
-        }
-
-        .dashboard-nav button.active {
-          background: #667eea;
-          color: white;
-        }
-
-        .dashboard-main {
-          padding: 2rem;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        @media (max-width: 768px) {
-          .header-content {
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-          }
-
-          .dashboard-nav {
-            padding: 1rem;
-            gap: 0.5rem;
-          }
-
-          .dashboard-nav button {
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-          }
-
-          .dashboard-main {
-            padding: 1rem;
-          }
-        }
-      `}</style>
     </div>
   );
 };

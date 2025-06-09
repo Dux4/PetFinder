@@ -10,7 +10,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom icon for lost pets only
+// Custom icon for lost pets
 const lostIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -21,13 +21,12 @@ const lostIcon = new L.Icon({
 });
 
 const Map = ({ announcements }) => {
-  const [center] = useState([-12.9714, -38.5014]); // Salvador centro
+  const [center] = useState([-12.9714, -38.5014]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Filtrar apenas anúncios perdidos com coordenadas válidas
   const lostPets = announcements.filter(a => 
     a.type === 'perdido' &&
     a.latitude && a.longitude && 
@@ -35,21 +34,21 @@ const Map = ({ announcements }) => {
   );
 
   return (
-    <div className="map-wrapper">
-      <div className="map-header">
-        <h2>Mapa de Pets Perdidos em Salvador</h2>
-        <div className="map-stats">
-          <span className="stat-item">
+    <div className="flex flex-col bg-white rounded-xl shadow-xl overflow-hidden h-[calc(100vh-200px)] min-h-[600px]">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-6">
+        <h2 className="text-xl md:text-2xl font-bold mb-4">Mapa de Pets Perdidos em Salvador</h2>
+        <div className="flex gap-4 items-center">
+          <span className="bg-white/20 px-4 py-2 rounded-full font-semibold backdrop-blur-sm">
             🔴 Perdidos: {lostPets.length}
           </span>
         </div>
       </div>
       
-      <div className="map-container">
+      <div className="flex-grow relative z-10">
         <MapContainer
           center={center}
           zoom={11}
-          style={{ height: '100%', width: '100%' }}
+          className="h-full w-full"
           scrollWheelZoom={true}
           touchZoom={true}
           doubleClickZoom={true}
@@ -75,40 +74,48 @@ const Map = ({ announcements }) => {
                 autoClose={false}
                 closeOnEscapeKey={true}
               >
-                <div className="popup-content">
-                  <div className="popup-header">
-                    <h4>{announcement.pet_name}</h4>
-                    <span className="pet-type">Perdido</span>
+                <div className="text-sm leading-tight">
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 flex justify-between items-center">
+                    <h4 className="text-base font-semibold m-0">{announcement.pet_name}</h4>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">
+                      Perdido
+                    </span>
                   </div>
                   
                   {announcement.image_url && (
-                    <div className="popup-image">
+                    <div className="w-full h-40 overflow-hidden bg-gray-100">
                       <img
                         src={`http://localhost:3000${announcement.image_url}`}
                         alt={announcement.pet_name}
                         loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                       />
                     </div>
                   )}
                   
-                  <div className="popup-info">
-                    <div className="info-row">
+                  <div className="p-4">
+                    <div className="mb-3 flex flex-col gap-1">
                       <strong>Bairro:</strong> {announcement.neighborhood}
                     </div>
-                    <div className="info-row">
+                    <div className="mb-3 flex flex-col gap-1">
                       <strong>Descrição:</strong> 
-                      <span className="description">{announcement.description}</span>
+                      <span className="text-gray-600 italic max-h-[60px] overflow-y-auto pr-2">
+                        {announcement.description}
+                      </span>
                     </div>
-                    <div className="info-row">
+                    <div className="mb-3 flex flex-col gap-1">
                       <strong>Contato:</strong> {announcement.user?.name}
                     </div>
-                    <div className="info-row">
+                    <div className="mb-3 flex flex-col gap-1">
                       <strong>Telefone:</strong> 
-                      <a href={`tel:${announcement.user?.phone}`} className="phone-link">
+                      <a 
+                        href={`tel:${announcement.user?.phone}`} 
+                        className="text-indigo-600 font-semibold hover:text-purple-700 hover:underline transition-colors"
+                      >
                         {announcement.user?.phone}
                       </a>
                     </div>
-                    <div className="info-row">
+                    <div className="flex flex-col gap-1">
                       <strong>Data:</strong> {formatDate(announcement.created_at)}
                     </div>
                   </div>
@@ -118,233 +125,6 @@ const Map = ({ announcements }) => {
           ))}
         </MapContainer>
       </div>
-
-      <style jsx>{`
-        .map-wrapper {
-          height: calc(100vh - 200px);
-          min-height: 600px;
-          display: flex;
-          flex-direction: column;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-          overflow: hidden;
-        }
-
-        .map-header {
-          padding: 1.5rem 2rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-        }
-
-        .map-header h2 {
-          margin: 0 0 1rem 0;
-          font-size: 1.5rem;
-        }
-
-        .map-stats {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-        }
-
-        .stat-item {
-          background: rgba(255,255,255,0.2);
-          padding: 0.5rem 1rem;
-          border-radius: 20px;
-          font-weight: 600;
-          backdrop-filter: blur(10px);
-        }
-
-        .map-container {
-          flex: 1;
-          position: relative;
-          z-index: 1;
-        }
-
-        :global(.custom-popup .leaflet-popup-content-wrapper) {
-          border-radius: 12px !important;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
-          overflow: hidden !important;
-        }
-
-        :global(.custom-popup .leaflet-popup-content) {
-          margin: 0 !important;
-          padding: 0 !important;
-          max-height: 380px !important;
-          overflow-y: auto !important;
-        }
-
-        :global(.custom-popup .leaflet-popup-tip) {
-          background: white !important;
-        }
-
-        .popup-content {
-          font-size: 14px;
-          line-height: 1.4;
-        }
-
-        .popup-header {
-          padding: 1rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .popup-header h4 {
-          margin: 0;
-          font-size: 1.1rem;
-          font-weight: 600;
-        }
-
-        .pet-type {
-          background: rgba(255,255,255,0.2);
-          padding: 0.25rem 0.75rem;
-          border-radius: 15px;
-          font-size: 0.8rem;
-          font-weight: 600;
-        }
-
-        .popup-image {
-          width: 100%;
-          height: 160px;
-          overflow: hidden;
-          background: #f5f5f5;
-        }
-
-        .popup-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-
-        .popup-image img:hover {
-          transform: scale(1.05);
-        }
-
-        .popup-info {
-          padding: 1rem;
-        }
-
-        .info-row {
-          margin-bottom: 0.75rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .info-row:last-child {
-          margin-bottom: 0;
-        }
-
-        .info-row strong {
-          color: #333;
-          font-weight: 600;
-        }
-
-        .description {
-          color: #666;
-          font-style: italic;
-          max-height: 60px;
-          overflow-y: auto;
-          padding-right: 0.5rem;
-        }
-
-        .phone-link {
-          color: #667eea;
-          text-decoration: none;
-          font-weight: 600;
-          transition: color 0.3s ease;
-        }
-
-        .phone-link:hover {
-          color: #764ba2;
-          text-decoration: underline;
-        }
-
-        /* Scrollbar para descrição longa */
-        .description::-webkit-scrollbar {
-          width: 4px;
-        }
-
-        .description::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 2px;
-        }
-
-        .description::-webkit-scrollbar-thumb {
-          background: #667eea;
-          border-radius: 2px;
-        }
-
-        @media (max-width: 768px) {
-          .map-wrapper {
-            height: calc(100vh - 160px);
-            min-height: 500px;
-            border-radius: 8px;
-          }
-
-          .map-header {
-            padding: 1rem;
-          }
-
-          .map-header h2 {
-            font-size: 1.25rem;
-          }
-
-          .stat-item {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.9rem;
-          }
-
-          :global(.custom-popup .leaflet-popup-content-wrapper) {
-            max-width: 280px !important;
-          }
-
-          .popup-image {
-            height: 140px;
-          }
-
-          .popup-info {
-            padding: 0.75rem;
-          }
-
-          .info-row {
-            margin-bottom: 0.6rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .map-wrapper {
-            height: calc(100vh - 140px);
-            min-height: 400px;
-          }
-
-          .map-header {
-            padding: 0.75rem;
-          }
-
-          .map-header h2 {
-            font-size: 1.1rem;
-            margin-bottom: 0.75rem;
-          }
-
-          :global(.custom-popup .leaflet-popup-content-wrapper) {
-            max-width: 260px !important;
-          }
-
-          .popup-image {
-            height: 120px;
-          }
-
-          .popup-content {
-            font-size: 13px;
-          }
-        }
-      `}</style>
     </div>
   );
 };
