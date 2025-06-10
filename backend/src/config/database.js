@@ -1,4 +1,4 @@
-// config/database.js - VERSÃO SIMPLES CORRIGIDA
+// config/database.js - CONFIGURAÇÃO COMPLETA COM COMENTÁRIOS
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -44,11 +44,35 @@ const createTables = async () => {
       );
     `;
 
+    // NOVA: Criar tabela de comentários
+    const createCommentsTable = `
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        announcement_id INTEGER REFERENCES announcements(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Criar índices para otimizar buscas
+    const createIndexes = `
+      CREATE INDEX IF NOT EXISTS idx_comments_announcement_id ON comments(announcement_id);
+      CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
+    `;
+
+    // Executar criação das tabelas
     await pool.query(createUsersTable);
     console.log('✅ Tabela users OK');
     
     await pool.query(createAnnouncementsTable);
     console.log('✅ Tabela announcements OK');
+    
+    await pool.query(createCommentsTable);
+    console.log('✅ Tabela comments OK');
+    
+    await pool.query(createIndexes);
+    console.log('✅ Índices criados');
     
     // Inserir usuário de teste apenas se não existir
     const insertTestUser = `
@@ -58,7 +82,7 @@ const createTables = async () => {
     `;
     
     await pool.query(insertTestUser);
-    console.log('✅ Setup completo');
+    console.log('✅ Setup completo - Database ready!');
     
   } catch (err) {
     console.error('❌ Erro ao criar tabelas:', err);

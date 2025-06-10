@@ -6,7 +6,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Interceptor para adicionar token
+// Interceptor para adicionar token - CORRIGIDO
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('pet-finder-token');
   if (token) {
@@ -14,6 +14,15 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Interceptor para tratar erros globalmente
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
 
 // Auth
 export const login = async (credentials) => {
@@ -81,6 +90,38 @@ export const getNeighborhoodCoords = async (neighborhood) => {
     params: { neighborhood }
   });
   return response.data;
+};
+
+// Comentários - CORRIGIDO: Tudo usando axios agora
+export const getComments = async (announcementId) => {
+  try {
+    const response = await api.get(`/announcements/${announcementId}/comments`);
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar comentários:', error);
+    throw new Error('Erro ao carregar comentários');
+  }
+};
+
+export const createComment = async (announcementId, content) => {
+  try {
+    const response = await api.post(`/announcements/${announcementId}/comments`, {
+      content: content
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao criar comentário:', error);
+    if (error.response) {
+      // Erro do servidor com resposta
+      throw new Error(error.response.data.error || 'Erro ao criar comentário');
+    } else if (error.request) {
+      // Erro de rede
+      throw new Error('Erro de conexão. Verifique sua internet.');
+    } else {
+      // Outros erros
+      throw new Error('Erro inesperado ao criar comentário');
+    }
+  }
 };
 
 export default api;

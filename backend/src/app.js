@@ -9,6 +9,7 @@ const authenticateToken = require('./middleware/auth');
 const AuthController = require('./controllers/authController');
 const AnnouncementController = require('./controllers/announcementController');
 const LocationController = require('./controllers/locationController');
+const CommentController = require('./controllers/CommentController'); // NOVO
 
 const app = express();
 
@@ -33,6 +34,10 @@ app.post('/api/announcements', authenticateToken, upload.single('image'), Announ
 app.get('/api/announcements', AnnouncementController.getAll);
 app.get('/api/my-announcements', authenticateToken, AnnouncementController.getMyAnnouncements);
 app.patch('/api/announcements/:id/status', authenticateToken, AnnouncementController.updateStatus);
+
+// Comment routes - NOVO
+app.post('/api/announcements/:announcement_id/comments', authenticateToken, CommentController.create);
+app.get('/api/announcements/:announcement_id/comments', CommentController.getByAnnouncement);
 
 // Location routes
 app.get('/api/neighborhoods', LocationController.getNeighborhoods);
