@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -35,9 +36,10 @@ const neighborhoods = [
 ];
 
 const LandingPage = () => {
+  const router = useRouter();
+
   return (
     <ScrollView style={styles.container}>
-      {/* Seção Principal */}
       <View style={styles.mainSection}>
         <View style={styles.textContainer}>
           <Text style={styles.title}>🐾 Pet Finder Salvador</Text>
@@ -64,10 +66,16 @@ const LandingPage = () => {
           </View>
         </View>
         <View style={styles.buttonGroup}>
-          <TouchableOpacity style={styles.loginButton}>
+          <TouchableOpacity 
+            style={styles.loginButton}
+            onPress={() => router.push('/login')}
+          >
             <Text style={styles.buttonText}>Entrar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.registerButton}>
+          <TouchableOpacity 
+            style={styles.registerButton}
+            onPress={() => router.push('/register')}
+          >
             <Text style={styles.registerButtonText}>Cadastrar-se</Text>
           </TouchableOpacity>
         </View>
