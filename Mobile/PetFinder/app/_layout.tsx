@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider } from '../contexts/AuthContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -18,16 +19,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        {/* Adiciona a tela "landing" à navegação, e ela será a primeira tela a ser exibida. */}
-        <Stack.Screen name="landing" options={{ headerShown: false }} />
-
-        {/* A navegação de abas agora é uma tela separada na pilha. */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        
-        {/* A tela "not-found" é para lidar com rotas que não existem. */}
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <AuthProvider>
+        <Stack>
+          <Stack.Screen name="landing" options={{ headerShown: false }} />
+          <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </AuthProvider>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
