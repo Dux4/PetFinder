@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-// Importe seu serviço de API e contexto, se necessário.
-// Por exemplo:
-// import { register } from '../services/api'; 
-// import { useAuth } from '../contexts/AuthContext';
+// IMPORTANTE: Adicione os imports da sua API e do contexto
+import { register } from '../../services/api'; 
+import { useAuth } from '../../contexts/AuthContext';
 
+// Definição do tipo para o estado do formulário
 type FormData = {
     name: string;
     email: string;
@@ -16,7 +16,8 @@ type FormData = {
 
 const RegisterScreen = () => {
     const router = useRouter();
-    // const { login } = useAuth();
+    // IMPORTANTE: Use a função de login do seu contexto
+    const { login: authLogin } = useAuth();
     const [formData, setFormData] = useState<FormData>({
         name: '',
         email: '',
@@ -28,7 +29,6 @@ const RegisterScreen = () => {
     const [message, setMessage] = useState('');
 
     const handleSubmit = async () => {
-        // A lógica de validação de senha e chamada de API está aqui
         if (formData.password !== formData.confirmPassword) {
             setMessage('As senhas não coincidem');
             return;
@@ -38,14 +38,19 @@ const RegisterScreen = () => {
         setMessage('');
 
         try {
-            // Lógica para chamada da API
-            // const { confirmPassword, ...submitData } = formData;
-            // const response = await register(submitData);
-            // login(response.token, response.user);
+            // IMPORTANTE: Chamada real para a API de registro
+            const { confirmPassword, ...submitData } = formData;
+            const response = await register(submitData);
+            
+            // Login no contexto após o registro
+            authLogin(response.token, response.user);
+            
             setMessage('Sucesso! Conta criada com sucesso.');
             Alert.alert('Sucesso', 'Conta criada com sucesso!');
-            // router.push('/'); // Navega para a página inicial
-        } catch (err: any) { // Type as 'any' since we don't know the exact error type
+            
+            // Navega para o dashboard
+            router.push('/dashboard'); 
+        } catch (err: any) {
             setMessage(err?.response?.data?.error || 'Erro ao criar conta');
         } finally {
             setLoading(false);
@@ -138,9 +143,11 @@ const RegisterScreen = () => {
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <Text style={styles.primaryButtonText}>
-                                {loading ? 'Criando conta...' : 'Criar Conta'}
-                            </Text>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.primaryButtonText}>Criar Conta</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 
@@ -173,7 +180,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         width: '100%',
         maxWidth: 450,
-        // Sombras para Android e iOS
         elevation: 10,
         shadowColor: 'rgba(0,0,0,0.1)',
         shadowOffset: { width: 0, height: 10 },

@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-// Importe seu serviço de API e contexto, se necessário.
-// Por exemplo:
-// import { login } from '../services/api';
-// import { useAuth } from '../contexts/AuthContext';
+import { login as loginApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+
+// Definição do tipo para o estado do formulário
+interface FormData {
+    email: string;
+    password: string;
+}
 
 const LoginScreen = () => {
     const router = useRouter();
-    // const { login: authLogin } = useAuth();
-    const [formData, setFormData] = useState({
+    const { login: authLogin } = useAuth();
+    const [formData, setFormData] = useState<FormData>({
         email: '',
         password: ''
     });
@@ -21,25 +25,19 @@ const LoginScreen = () => {
         setMessage('');
 
         try {
-            // Lógica para chamada da API
-            // const response = await login(formData);
-            // authLogin(response.token, response.user);
-            Alert.alert('Sucesso', 'Login efetuado com sucesso!');
-            // router.push('/'); // Navega para a página principal após o login
-        } catch (error) {
-            // Lógica para tratamento de erros
-            if (typeof error === 'object' && error !== null && 'response' in error) {
-                const err = error as { response?: { data?: { error?: string } } };
-                setMessage(err.response?.data?.error || 'Erro ao fazer login');
-            } else {
-                setMessage('Erro ao fazer login');
-            }
+            const response = await loginApi(formData);
+            authLogin(response.token, response.user);
+            
+            // Navega para a página principal após o login
+            router.push('/dashboard'); 
+        } catch (error: any) {
+            setMessage(error.response?.data?.error || 'Erro ao fazer login');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleInputChange = (name: string, value: string) => {
+    const handleInputChange = (name: keyof FormData, value: string) => {
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -98,9 +96,11 @@ const LoginScreen = () => {
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <Text style={styles.primaryButtonText}>
-                                {loading ? 'Entrando...' : 'Entrar'}
-                            </Text>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.primaryButtonText}>Entrar</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
         padding: 48,
         borderRadius: 16,
         width: '100%',
-        maxWidth: 400, // Ajuste para o max-width da sua versão web
+        maxWidth: 400,
         elevation: 10,
         shadowColor: 'rgba(0,0,0,0.1)',
         shadowOffset: { width: 0, height: 10 },
