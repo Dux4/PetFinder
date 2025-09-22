@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { Stack, useRouter } from 'expo-router';
-// IMPORTANTE: Descomente esta linha para usar suas funções de API
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../../services/api';
-
-// O AnnouncementList que você acabou de converter!
 import AnnouncementList from '../../components/AnnouncementList';
+import AnnouncementForm from '../../components/AnnouncementForm';
 
-// Placeholder para os outros componentes
-const AnnouncementForm = ({ onSuccess }: { onSuccess: () => void }) => <Text>AnnouncementForm Placeholder</Text>;
+// Only keep these placeholders
 const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }: { announcement: any, onBack: () => void, onStatusUpdate: () => void }) => <Text>AnnouncementDetail Placeholder</Text>;
 const Map = ({ announcements, onViewDetail }: { announcements: any, onViewDetail: (announcement: any) => void }) => <Text>Map Placeholder</Text>;
 
@@ -164,7 +161,14 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'criar' && (
-                    <AnnouncementForm onSuccess={loadData} />
+                    <View style={styles.formContainer}>
+                        <AnnouncementForm 
+                            onSuccess={() => {
+                                loadData();
+                                setActiveTab('meus');
+                            }} 
+                        />
+                    </View>
                 )}
             </ScrollView>
         </View>
@@ -283,6 +287,16 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     padding: 16,
+  },
+  formContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });
 
