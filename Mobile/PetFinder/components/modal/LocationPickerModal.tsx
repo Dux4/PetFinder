@@ -5,12 +5,10 @@ import {
   View, 
   TouchableOpacity, 
   Modal, 
-  Dimensions, 
   Alert,
-  ActivityIndicator
+  Platform 
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapComponent from '../ui/MapComponent'; // Importação do componente de mapa
 
 interface LocationPickerModalProps {
   isOpen: boolean;
@@ -19,16 +17,121 @@ interface LocationPickerModalProps {
   currentPosition: [number, number] | null;
 }
 
+const LeafletLocationPicker: React.FC<{
+  selectedPosition: [number, number];
+  onPositionChange: (position: [number, number]) => void;
+}> = ({ selectedPosition, onPositionChange }) => {
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const loadLeaflet = async () => {
+        // Carregue o CSS do Leaflet
+        if (!document.querySelector('#leaflet-css')) {
+          const link = document.createElement('link');
+          link.id = 'leaflet-css';
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(link);
+        }
+
+        // Carregue o JS do Leaflet
+        if (!window.L) {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = () => initializeMap();
+          document.head.appendChild(script);
+        } else {
+          initializeMap();
+        }
+      };
+
+      const initializeMap = () => {
+        const mapElement = document.getElementById('location-picker-map');
+        if (mapElement && window.L) {
+          // Limpe o mapa existente se houver
+          mapElement.innerHTML = '';
+
+          const map = window.L.map('location-picker-map').setView(selectedPosition, 13);
+          mapRef.current = map;
+
+          // Adicione tiles do OpenStreetMap
+          window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          }).addTo(map);
+
+          // Adicione marcador inicial
+          const marker = window.L.marker(selectedPosition, {
+            draggable: true
+          }).addTo(map);
+          
+          markerRef.current = marker;
+
+          // Event listeners
+          marker.on('dragend', function() {
+            const position = marker.getLatLng();
+            onPositionChange([position.lat, position.lng]);
+          });
+
+          map.on('click', function(e: any) {
+            const { lat, lng } = e.latlng;
+            marker.setLatLng([lat, lng]);
+            onPositionChange([lat, lng]);
+          });
+        }
+      };
+
+      loadLeaflet();
+    }
+  }, []);
+
+  // Atualizar posição do marcador quando selectedPosition mudar
+  useEffect(() => {
+    if (mapRef.current && markerRef.current && Platform.OS === 'web') {
+      markerRef.current.setLatLng(selectedPosition);
+      mapRef.current.setView(selectedPosition, mapRef.current.getZoom());
+    }
+  }, [selectedPosition]);
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div 
+        id="location-picker-map" 
+        style={{ 
+          width: '100%', 
+          height: '100%', 
+          minHeight: '300px',
+          borderRadius: '8px'
+        }} 
+      />
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        background: 'rgba(255, 255, 255, 0.9)',
+        padding: '8px 12px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        zIndex: 1000
+      }}>
+        💡 Clique no mapa ou arraste o marcador para selecionar a localização
+      </div>
+    </div>
+  );
+};
+
 const LocationPickerModal: React.FC<LocationPickerModalProps> = ({ 
   isOpen, 
   onClose, 
   onConfirm, 
   currentPosition 
 }) => {
-  const [selectedPosition, setSelectedPosition] = useState(
+  const [selectedPosition, setSelectedPosition] = useState<[number, number]>(
     currentPosition || [-12.9714, -38.5014]
   );
-  const mapRef = useRef<any>(null); // Usamos `any` para compatibilidade com o componente web
 
   const handleConfirm = () => {
     if (selectedPosition) {
@@ -49,18 +152,40 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       const newPos: [number, number] = [position.coords.latitude, position.coords.longitude];
       setSelectedPosition(newPos);
       
-      if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: newPos[0],
-          longitude: newPos[1],
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        });
-      }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível obter a sua localização atual.');
     }
   };
+
+  if (Platform.OS !== 'web') {
+    return (
+      <Modal visible={isOpen} animationType="slide" transparent={true} onRequestClose={onClose}>
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Seleção de Localização</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.unsupportedContainer}>
+              <Text style={styles.unsupportedText}>
+                Seleção de localização no mapa disponível apenas na versão web.
+              </Text>
+              <Text style={styles.unsupportedSubtext}>
+                Use o aplicativo mobile para funcionalidade completa de geolocalização.
+              </Text>
+            </View>
+            <View style={styles.footer}>
+              <TouchableOpacity onPress={onClose} style={[styles.button, styles.cancelButton]}>
+                <Text style={styles.cancelButtonText}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -100,10 +225,9 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
           {/* Mapa */}
           <View style={styles.mapWrapper}>
-            <MapComponent
-              mapRef={mapRef}
-              selectedPosition={selectedPosition}
-              onPress={(e) => setSelectedPosition([e.nativeEvent.coordinate.latitude, e.nativeEvent.coordinate.longitude])}
+            <LeafletLocationPicker 
+              selectedPosition={selectedPosition} 
+              onPositionChange={setSelectedPosition}
             />
           </View>
 
@@ -112,7 +236,11 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
             <TouchableOpacity onPress={onClose} style={[styles.button, styles.cancelButton]}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleConfirm} style={[styles.button, styles.confirmButton]} disabled={!selectedPosition}>
+            <TouchableOpacity 
+              onPress={handleConfirm} 
+              style={[styles.button, styles.confirmButton]} 
+              disabled={!selectedPosition}
+            >
               <Text style={styles.confirmButtonText}>Confirmar Localização</Text>
             </TouchableOpacity>
           </View>
@@ -142,7 +270,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   header: {
-    backgroundColor: '#4F46E5', // Cor sólida para o gradiente
+    backgroundColor: '#4F46E5',
     padding: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -166,7 +294,7 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 9999,
+    borderRadius: 16,
   },
   closeButtonText: {
     color: '#fff',
@@ -203,10 +331,6 @@ const styles = StyleSheet.create({
   mapWrapper: {
     flex: 1,
   },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
   footer: {
     padding: 24,
     borderTopWidth: 1,
@@ -232,12 +356,36 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   confirmButton: {
-    backgroundColor: '#4F46E5', // Cor sólida para o gradiente
+    backgroundColor: '#4F46E5',
   },
   confirmButtonText: {
     color: '#fff',
     fontWeight: '600',
   },
+  unsupportedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  unsupportedText: {
+    fontSize: 16,
+    color: '#4B5563',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  unsupportedSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
 });
+
+// Declarações TypeScript para window
+declare global {
+  interface Window {
+    L: any;
+  }
+}
 
 export default LocationPickerModal;

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { Stack, useRouter } from 'expo-router';
+// Importe suas funções de API
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../../services/api';
-import AnnouncementList from '../../components/AnnouncementList';
-import AnnouncementForm from '../../components/AnnouncementForm';
 
-// Only keep these placeholders
-const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }: { announcement: any, onBack: () => void, onStatusUpdate: () => void }) => <Text>AnnouncementDetail Placeholder</Text>;
-const Map = ({ announcements, onViewDetail }: { announcements: any, onViewDetail: (announcement: any) => void }) => <Text>Map Placeholder</Text>;
+// IMPORTANTE:
+// Importe todos os componentes que já convertemos
+import AnnouncementList from '../../components/AnnouncementList';
+import AnnouncementDetail from '../../components/AnnouncementDetail';
+import AnnouncementForm from '../../components/AnnouncementForm';
+import Map from '../../components/ui/Map'; // Importação do Map corrigida
 
 interface Announcement {
     id: number;
@@ -48,7 +50,6 @@ const DashboardScreen = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            // IMPORTANTE: Remova os dados de exemplo e ative as chamadas reais de API.
             const [allActive, allFound, myAnnounces] = await Promise.all([
               getAllAnnouncements('ativo'),
               getAllAnnouncements('encontrado'),
@@ -67,7 +68,13 @@ const DashboardScreen = () => {
     };
 
     const handleViewDetail = async (announcement: Announcement) => {
-        Alert.alert('Detalhes', `Detalhes do anúncio: ${announcement.title}`);
+        setLoadingDetail(true);
+        setSelectedAnnouncement(announcement);
+        setLoadingDetail(false);
+    };
+
+    const handleBackFromDetail = () => {
+        setSelectedAnnouncement(null);
     };
 
     const tabs = [
@@ -78,6 +85,21 @@ const DashboardScreen = () => {
         { id: 'encontrados', label: 'Encontrados', icon: '✅', count: foundPets.length },
     ];
     
+    // Mostra o componente de detalhes se um anúncio for selecionado
+    if (selectedAnnouncement) {
+        return (
+            <AnnouncementDetail
+                announcement={selectedAnnouncement}
+                onBack={handleBackFromDetail}
+                onStatusUpdate={() => {
+                    loadData();
+                    handleBackFromDetail();
+                }}
+            />
+        );
+    }
+    
+    // Se não houver anúncio selecionado, mostra o dashboard
     return (
         <View style={styles.dashboardContainer}>
             <Stack.Screen options={{ headerShown: false }} />
@@ -161,14 +183,7 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'criar' && (
-                    <View style={styles.formContainer}>
-                        <AnnouncementForm 
-                            onSuccess={() => {
-                                loadData();
-                                setActiveTab('meus');
-                            }} 
-                        />
-                    </View>
+                    <AnnouncementForm onSuccess={loadData} />
                 )}
             </ScrollView>
         </View>
@@ -287,16 +302,6 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     padding: 16,
-  },
-  formContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
   },
 });
 

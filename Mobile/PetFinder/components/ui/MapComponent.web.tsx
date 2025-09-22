@@ -4,10 +4,10 @@ import { View, Text } from 'react-native';
 interface MapComponentProps {
     onPress: (e: any) => void;
     selectedPosition: [number, number];
-    mapRef: any; // O mapRef não é usado na web, então usamos 'any'
+    mapRef: any;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ onPress, selectedPosition, mapRef }) => {
+const MapComponent: React.FC<MapComponentProps> = () => {
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text>

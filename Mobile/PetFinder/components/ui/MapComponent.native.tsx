@@ -1,10 +1,10 @@
 import React from 'react';
-import MapView, { Marker } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
+import { StyleSheet } from 'react-native';
 
 interface MapComponentProps {
-    onPress: (e: any) => void;
     selectedPosition: [number, number];
+    onPress: (e: any) => void;
     mapRef: React.MutableRefObject<MapView | null>;
 }
 
@@ -21,6 +21,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ onPress, selectedPosition, 
             }}
             onPress={onPress}
         >
+            <UrlTile
+                urlTemplate="https://a.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maximumZ={19}
+            />
             {selectedPosition && <Marker coordinate={{ latitude: selectedPosition[0], longitude: selectedPosition[1] }} />}
         </MapView>
     );
