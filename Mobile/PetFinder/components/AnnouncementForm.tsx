@@ -16,14 +16,7 @@ import * as Location from 'expo-location';
 import { Picker } from '@react-native-picker/picker';
 import { Feather } from '@expo/vector-icons';
 import { createAnnouncement, getNeighborhoods } from '../services/api';
-
-// IMPORTANTE: O LocationPickerModal precisa ser convertido separadamente
-const LocationPickerModal = ({ isOpen, onClose, onConfirm, currentPosition }: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (position: [number, number]) => void;
-  currentPosition: [number, number] | null;
-}) => <Text>LocationPickerModal Placeholder</Text>;
+import LocationPickerModal from './modal/LocationPickerModal';
 
 interface FormData {
   pet_name: string;
