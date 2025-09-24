@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-// Importe seus serviços de API.
-// import { updateAnnouncementStatus, getComments, createComment } from '../services/api';
+// Importe os serviços de API reais
+import { updateAnnouncementStatus, getComments, createComment } from '../services/api';
 
 interface Announcement {
     id: number;
@@ -67,20 +67,27 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
   useEffect(() => {
     const loadComments = async () => {
       try {
-        // const commentsData = await getComments(announcement.id);
-        // setComments(commentsData);
-        setComments([
-          { id: 1, content: 'Que triste, espero que encontre!', created_at: new Date().toISOString(), user_id: 1, user: { id: 1, name: 'João' } },
-          { id: 2, content: 'Já procurei por perto', created_at: new Date(Date.now() - 3600000).toISOString(), user_id: 2, user: { id: 2, name: 'Ana' } },
-        ]);
+        setLoadingComments(true);
+        console.log('Carregando comentários para anúncio:', announcement.id);
+        
+        const commentsData = await getComments(announcement.id);
+        console.log('Comentários carregados:', commentsData);
+        
+        setComments(commentsData || []);
       } catch (error) {
         console.error('Erro ao carregar comentários:', error);
+        Alert.alert('Erro', 'Não foi possível carregar os comentários');
+        // Manter array vazio em caso de erro
+        setComments([]);
       } finally {
         setLoadingComments(false);
       }
     };
 
-    loadComments();
+    // Só carrega comentários se tiver um ID válido
+    if (announcement.id) {
+      loadComments();
+    }
   }, [announcement.id]);
 
   const handleStatusUpdate = async (newStatus: 'ativo' | 'encontrado') => {
@@ -88,7 +95,11 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
 
     setUpdating(true);
     try {
-      // await updateAnnouncementStatus(announcement.id, newStatus);
+      console.log('Atualizando status do anúncio:', announcement.id, 'para:', newStatus);
+      
+      await updateAnnouncementStatus(announcement.id, newStatus);
+      
+      Alert.alert('Sucesso', 'Status do anúncio atualizado com sucesso');
       onStatusUpdate();
       onBack();
     } catch (error) {
@@ -100,29 +111,36 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
   };
 
   const handleCommentSubmit = async () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim() || !user || submittingComment) {
+      return;
+    }
 
     setSubmittingComment(true);
     try {
-      // const response = await createComment(announcement.id, newComment.trim());
-      // setComments([...comments, response.comment]);
+      console.log('Enviando comentário para anúncio:', announcement.id);
+      console.log('Conteúdo:', newComment.trim());
       
-      const newCommentData = {
-        id: Math.random(),
-        content: newComment.trim(),
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        user: {
-          id: user.id,
-          name: user.name,
-        }
-      };
-      setComments([...comments, newCommentData]);
-      setNewComment('');
-
+      const response = await createComment(announcement.id, newComment.trim());
+      console.log('Resposta do comentário:', response);
+      
+      if (response && response.comment) {
+        // Adicionar o novo comentário à lista
+        setComments(prevComments => [...prevComments, response.comment]);
+        setNewComment('');
+        
+        Alert.alert('Sucesso', 'Comentário enviado com sucesso');
+      } else {
+        throw new Error('Resposta inválida do servidor');
+      }
     } catch (error) {
       console.error('Erro ao enviar comentário:', error);
-      Alert.alert('Erro', 'Erro ao enviar comentário');
+      
+      let errorMessage = 'Erro ao enviar comentário';
+      if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
+        errorMessage = (error as any).message;
+      }
+      
+      Alert.alert('Erro', errorMessage);
     } finally {
       setSubmittingComment(false);
     }
@@ -143,14 +161,18 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
   };
 
   const formatCommentDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'agora';
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
-    return date.toLocaleDateString('pt-BR');
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      
+      if (diffInMinutes < 1) return 'agora';
+      if (diffInMinutes < 60) return `${diffInMinutes}m`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
+      return date.toLocaleDateString('pt-BR');
+    } catch {
+      return 'Data inválida';
+    }
   };
 
   return (
@@ -282,9 +304,11 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
                   disabled={!newComment.trim() || submittingComment}
                   style={[styles.commentButton, (!newComment.trim() || submittingComment) && styles.commentButtonDisabled]}
                 >
-                  <Text style={styles.commentButtonText}>
-                    {submittingComment ? 'Enviando...' : 'Comentar'}
-                  </Text>
+                  {submittingComment ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.commentButtonText}>Comentar</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>

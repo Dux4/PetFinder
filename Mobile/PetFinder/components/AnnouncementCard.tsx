@@ -10,8 +10,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-// Importe seu serviço de API.
-// import { updateAnnouncementStatus } from '../services/api';
+import { updateAnnouncementStatus } from '../services/api';
 
 interface Announcement {
     id: number;
@@ -38,7 +37,12 @@ interface AnnouncementCardProps {
   onViewDetail?: (announcement: Announcement) => void;
 }
 
-const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, showOwnerActions, onStatusUpdate, onViewDetail }) => {
+const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ 
+  announcement, 
+  showOwnerActions, 
+  onStatusUpdate, 
+  onViewDetail 
+}) => {
   const { user } = useAuth();
   const [updating, setUpdating] = useState(false);
 
@@ -49,15 +53,18 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, showO
 
     setUpdating(true);
     try {
-      // Sua lógica de API para atualizar o status
-      // const response = await updateAnnouncementStatus(announcement.id, newStatus);
+      const response = await updateAnnouncementStatus(announcement.id, newStatus);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      Alert.alert('Sucesso', 'Status atualizado com sucesso!');
-      onStatusUpdate?.();
+      if (response && (response.success || response.data || response.announcement)) {
+        Alert.alert('Sucesso', 'Status atualizado com sucesso!');
+        onStatusUpdate?.();
+      } else {
+        throw new Error('Resposta inválida da API');
+      }
 
-    } catch (error: any) { // Type as 'any'
+    } catch (error: any) {
       console.error('Erro ao atualizar status:', error);
+      
       let errorMessage = 'Erro ao atualizar status do anúncio';
       const response = error.response;
       if (response?.status === 401) {
@@ -66,7 +73,10 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, showO
         errorMessage = 'Anúncio não encontrado';
       } else if (response?.status >= 500) {
         errorMessage = 'Erro interno do servidor. Tente novamente mais tarde';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
       Alert.alert('Erro', errorMessage);
     } finally {
       setUpdating(false);
@@ -93,6 +103,7 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, showO
     <TouchableOpacity
       style={styles.card}
       onPress={handleViewDetail}
+      activeOpacity={0.9}
     >
       {/* Imagem */}
       <View style={styles.imageContainer}>
@@ -167,7 +178,7 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({ announcement, showO
               style={[styles.statusButton, updating && styles.disabledButton]}
             >
               {updating ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.statusButtonText}>✅ Marcar como Encontrado</Text>
               )}
@@ -187,12 +198,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
     overflow: 'hidden',
     marginBottom: 16,
   },
   imageContainer: {
-    height: 192, // h-48
+    height: 192,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -265,6 +276,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     fontSize: 14,
     marginBottom: 16,
+    lineHeight: 20,
   },
   infoRow: {
     flexDirection: 'row',
@@ -286,6 +298,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#1F2937',
+    marginBottom: 2,
   },
   contactPhone: {
     fontSize: 14,
@@ -312,6 +325,7 @@ const styles = StyleSheet.create({
   detailsButtonText: {
     color: '#fff',
     fontWeight: '500',
+    fontSize: 14,
   },
   statusButton: {
     width: '100%',
@@ -326,6 +340,7 @@ const styles = StyleSheet.create({
   statusButtonText: {
     color: '#fff',
     fontWeight: '500',
+    fontSize: 14,
   },
   disabledButton: {
     opacity: 0.5,
