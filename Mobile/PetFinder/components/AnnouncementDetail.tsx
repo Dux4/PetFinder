@@ -18,7 +18,7 @@ import { updateAnnouncementStatus, getComments, createComment } from '../service
 interface Announcement {
     id: number;
     title: string;
-    image_url?: string;
+    image_data?: string; // NOVO: Propriedade para a imagem em Base64
     type: 'perdido' | 'encontrado';
     status: 'ativo' | 'encontrado';
     pet_name: string;
@@ -200,9 +200,10 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
           <ScrollView contentContainerStyle={styles.cardScroll}>
             {/* Imagem */}
             <View style={styles.imageWrapper}>
-              {announcement.image_url ? (
+              {announcement.image_data ? (
                 <Image
-                  source={{ uri: `http://localhost:3000${announcement.image_url}` }}
+                  // Usa o Base64 para exibir a imagem
+                  source={{ uri: announcement.image_data }} 
                   style={styles.image}
                 />
               ) : (

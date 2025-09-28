@@ -1,5 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -46,13 +47,14 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
-// Anúncios
+// Anúncios - Agora suporta FormData para Web
 export const createAnnouncement = async (formData) => {
-  const response = await api.post('/announcements', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  // Se for uma instância de FormData, configuramos o header para multipart
+  const headers = Platform.OS === 'web'
+    ? { 'Content-Type': 'multipart/form-data' }
+    : {};
+  
+  const response = await api.post('/announcements', formData, { headers });
   return response.data;
 };
 

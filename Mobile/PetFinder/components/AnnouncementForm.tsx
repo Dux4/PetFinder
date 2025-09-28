@@ -17,6 +17,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Feather } from '@expo/vector-icons';
 import { createAnnouncement, getNeighborhoods } from '../services/api';
 import LocationPickerModal from './modal/LocationPickerModal';
+import * as FileSystem from 'expo-file-system';
 
 interface FormData {
   pet_name: string;
@@ -42,6 +43,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   });
   
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
   const [neighborhoods, setNeighborhoods] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,13 +56,10 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   }, []);
 
   const requestPermissions = async () => {
-    // Solicitar permissões para galeria
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permissão necessária', 'É necessário permitir acesso à galeria para enviar fotos.');
     }
-
-    // Solicitar permissões para localização
     const locationStatus = await Location.requestForegroundPermissionsAsync();
     if (locationStatus.status !== 'granted') {
       console.log('Permissão de localização negada');
@@ -70,14 +69,12 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   const loadNeighborhoods = async () => {
     try {
       const data = await getNeighborhoods();
-      // Transformar array simples em array de objetos se necessário
       const formattedData = Array.isArray(data) 
         ? data.map((name, index) => ({ id: index, name }))
         : data;
       setNeighborhoods(formattedData);
     } catch (error) {
       console.error('Erro ao carregar bairros:', error);
-      // Fallback com bairros de Salvador
       const salvadorNeighborhoods = [
         'Pelourinho', 'Barra', 'Itapuã', 'Pituba', 'Liberdade', 'Campo Grande',
         'Rio Vermelho', 'Ondina', 'Federação', 'Brotas', 'Nazaré', 'Barris',
@@ -88,20 +85,38 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
     }
   };
 
+  const readImageAsBase64 = async (uri: string) => {
+    try {
+      if (!uri) return null;
+      console.log('DEBUG: Lendo imagem URI:', uri);
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      if (base64.length > 0) {
+          console.log(`DEBUG: Imagem lida com sucesso. Tamanho Base64: ${base64.length} caracteres.`);
+      }
+      return base64;
+    } catch (error) {
+      console.error('ERRO: Falha ao ler imagem como Base64:', error);
+      Alert.alert('Erro', 'Não foi possível processar a imagem.');
+      return null;
+    }
+  };
+
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.8, // Reduzir qualidade para otimizar upload
+        quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         setImageUri(result.assets[0].uri);
+        setImageMimeType(result.assets[0].mimeType || 'image/jpeg');
       }
     } catch (error) {
-      console.error('Erro ao selecionar imagem:', error);
+      console.error('ERRO: Falha ao selecionar imagem:', error);
       Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
     }
   };
@@ -122,22 +137,18 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
       Alert.alert('Erro', 'Por favor, informe o nome do animal.');
       return false;
     }
-    
     if (!formData.description.trim()) {
       Alert.alert('Erro', 'Por favor, descreva o animal.');
       return false;
     }
-    
     if (!formData.neighborhood.trim()) {
       Alert.alert('Erro', 'Por favor, informe o bairro.');
       return false;
     }
-    
     if (!formData.latitude || !formData.longitude) {
       Alert.alert('Erro', 'Por favor, selecione a localização no mapa.');
       return false;
     }
-    
     return true;
   };
 
@@ -150,41 +161,59 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
     setMessage('');
 
     try {
-      // Criar FormData para envio
-      const submitData = new FormData();
-      
-      // Adicionar campos de texto
-      submitData.append('pet_name', formData.pet_name.trim());
-      submitData.append('description', formData.description.trim());
-      submitData.append('type', formData.type);
-      submitData.append('neighborhood', formData.neighborhood.trim());
-      submitData.append('latitude', formData.latitude);
-      submitData.append('longitude', formData.longitude);
-      
-      // Adicionar imagem se selecionada
-      if (imageUri) {
-        const filename = imageUri.split('/').pop() || 'photo.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : 'image/jpeg';
-        
-        // Formato específico para React Native
-        (submitData as any).append('image', {
-          uri: imageUri,
-          name: filename,
-          type: type,
+      let finalData;
+
+      if (Platform.OS === 'web') {
+        // Lógica para Web: usa FormData
+        const webFormData = new FormData();
+        Object.keys(formData).forEach(key => {
+          webFormData.append(key, (formData as any)[key]);
         });
+        
+        if (imageUri) {
+          console.log('DEBUG: Preparando imagem para web como FormData');
+          const blob = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = function() {
+              resolve(xhr.response);
+            };
+            xhr.onerror = function() {
+              reject(new TypeError('Network request failed'));
+            };
+            xhr.responseType = 'blob';
+            xhr.open('GET', imageUri, true);
+            xhr.send(null);
+          });
+          const filename = imageUri.split('/').pop() || 'photo.jpg';
+          webFormData.append('image', blob as any, filename);
+          console.log('DEBUG: Imagem adicionada ao FormData para web.');
+        }
+        finalData = webFormData;
+      } else {
+        // Lógica para iOS/Android: usa Base64
+        const mobileData = {
+          ...formData,
+        };
+        if (imageUri) {
+          console.log('DEBUG: Preparando imagem para mobile como Base64');
+          const base64Image = await readImageAsBase64(imageUri);
+          if (base64Image) {
+            mobileData.image_data = base64Image;
+            mobileData.image_mime_type = imageMimeType;
+          } else {
+            console.error('ERRO: Falha na conversão da imagem para Base64.');
+            setMessage('Erro ao processar a imagem. Tente outra foto.');
+            setLoading(false);
+            return;
+          }
+        }
+        finalData = mobileData;
       }
 
-      console.log('Enviando dados:', {
-        pet_name: formData.pet_name,
-        type: formData.type,
-        neighborhood: formData.neighborhood,
-        hasImage: !!imageUri,
-        coordinates: [formData.latitude, formData.longitude]
-      });
+      console.log('DEBUG: Dados finais para envio:', finalData);
 
       // Enviar para API
-      const response = await createAnnouncement(submitData);
+      const response = await createAnnouncement(finalData);
       console.log('Resposta da API:', response);
       
       setMessage('Anúncio criado com sucesso!');
@@ -199,9 +228,9 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
         longitude: ''
       });
       setImageUri(null);
+      setImageMimeType(null);
       setSelectedLocation(null);
       
-      // Callback de sucesso
       if (onSuccess) {
         setTimeout(() => {
           onSuccess();
@@ -209,7 +238,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
       }
       
     } catch (error: any) {
-      console.error('Erro ao criar anúncio:', error);
+      console.error('ERRO: Falha ao criar anúncio:', error);
       
       let errorMessage = 'Erro ao criar anúncio. Tente novamente.';
       
@@ -310,7 +339,10 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                   <RNImage source={{ uri: imageUri }} style={styles.previewImage} />
                   <TouchableOpacity 
                     style={styles.removeImageButton}
-                    onPress={() => setImageUri(null)}
+                    onPress={() => {
+                      setImageUri(null);
+                      setImageMimeType(null);
+                    }}
                   >
                     <Feather name="x" size={16} color="#fff" />
                   </TouchableOpacity>
