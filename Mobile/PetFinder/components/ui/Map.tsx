@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 interface Announcement {
     id: number;
     title: string;
-    image_url?: string;
+    image_data?: string; // NOVO: Usa a propriedade Base64 da imagem
     type: 'perdido' | 'encontrado';
     status: 'ativo' | 'encontrado';
     pet_name: string;
@@ -98,6 +98,12 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
 
                             const marker = window.L.marker([lat, lng], { icon }).addTo(map);
 
+                            // Usa a propriedade image_data para o popup
+                            const imageHtml = announcement.image_data ? `
+                                <img src="${announcement.image_data}" 
+                                    style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
+                            ` : '';
+
                             const popupContent = `
                                 <div style="min-width: 200px; font-family: Arial, sans-serif;">
                                     <div style="
@@ -109,10 +115,7 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                                     ">
                                         ${announcement.pet_name} - ${announcement.type === 'perdido' ? 'Perdido' : 'Encontrado'}
                                     </div>
-                                    ${announcement.image_url ? `
-                                        <img src="http://localhost:3000${announcement.image_url}" 
-                                             style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
-                                    ` : ''}
+                                    ${imageHtml}
                                     <div style="margin-bottom: 4px;"><strong>Bairro:</strong> ${announcement.neighborhood || 'Não informado'}</div>
                                     <div style="margin-bottom: 8px; color: #666; font-size: 12px;">
                                         Publicado em: ${new Date(announcement.created_at).toLocaleDateString('pt-BR')}
