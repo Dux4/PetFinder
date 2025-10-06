@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-// IMPORTANTE: Adicione os imports da sua API e do contexto
 import { register } from '../../services/api'; 
 import { useAuth } from '../../contexts/AuthContext';
 
-// Definição do tipo para o estado do formulário
 type FormData = {
     name: string;
     email: string;
@@ -16,7 +14,6 @@ type FormData = {
 
 const RegisterScreen = () => {
     const router = useRouter();
-    // IMPORTANTE: Use a função de login do seu contexto
     const { login: authLogin } = useAuth();
     const [formData, setFormData] = useState<FormData>({
         name: '',
@@ -38,17 +35,14 @@ const RegisterScreen = () => {
         setMessage('');
 
         try {
-            // IMPORTANTE: Chamada real para a API de registro
             const { confirmPassword, ...submitData } = formData;
             const response = await register(submitData);
             
-            // Login no contexto após o registro
             authLogin(response.token, response.user);
             
             setMessage('Sucesso! Conta criada com sucesso.');
             Alert.alert('Sucesso', 'Conta criada com sucesso!');
             
-            // Navega para o dashboard
             router.push('/dashboard'); 
         } catch (err: any) {
             setMessage(err?.response?.data?.error || 'Erro ao criar conta');
@@ -65,39 +59,45 @@ const RegisterScreen = () => {
     };
 
     return (
-        <View style={styles.outerContainer}>
+        <View className="flex-1 bg-purple-700">
             <Stack.Screen options={{ headerShown: false }} />
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.authCard}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Voltar</Text>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+                <View className="bg-white p-12 rounded-2xl w-full max-w-[450px] shadow-2xl">
+                    <TouchableOpacity onPress={() => router.back()} className="absolute top-4 left-4 p-2">
+                        <Text className="text-purple-700 text-base font-semibold">← Voltar</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.title}>Criar Conta</Text>
+                    <Text className="text-center text-gray-800 mb-8 text-3xl font-bold">
+                        Criar Conta
+                    </Text>
 
                     {message ? (
-                        <View style={[styles.messageBox, message.includes('Sucesso') ? styles.successMessage : styles.errorMessage]}>
-                            <Text style={message.includes('Sucesso') ? styles.successText : styles.errorText}>{message}</Text>
+                        <View className={`p-4 rounded-lg mb-4 ${message.includes('Sucesso') ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <Text className={`text-center ${message.includes('Sucesso') ? 'text-green-600' : 'text-red-600'}`}>
+                                {message}
+                            </Text>
                         </View>
                     ) : null}
 
-                    <View style={styles.form}>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Nome Completo:</Text>
+                    <View className="gap-6">
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Nome Completo:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="Seu nome completo"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.name}
                                 onChangeText={(text) => handleInputChange('name', text)}
                                 autoCapitalize="words"
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Email:</Text>
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Email:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="seu@email.com"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.email}
                                 onChangeText={(text) => handleInputChange('email', text)}
                                 keyboardType="email-address"
@@ -105,33 +105,36 @@ const RegisterScreen = () => {
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Telefone:</Text>
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Telefone:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="(71) 99999-9000"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.phone}
                                 onChangeText={(text) => handleInputChange('phone', text)}
                                 keyboardType="phone-pad"
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Senha:</Text>
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Senha:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="Mínimo 6 caracteres"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.password}
                                 onChangeText={(text) => handleInputChange('password', text)}
                                 secureTextEntry
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Confirmar Senha:</Text>
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Confirmar Senha:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="Digite a senha novamente"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.confirmPassword}
                                 onChangeText={(text) => handleInputChange('confirmPassword', text)}
                                 secureTextEntry
@@ -139,22 +142,24 @@ const RegisterScreen = () => {
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.button, styles.primaryButton, loading && styles.buttonDisabled]}
+                            className={`p-4 rounded-lg items-center ${loading ? 'bg-purple-700 opacity-60' : 'bg-purple-700'}`}
                             onPress={handleSubmit}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>Criar Conta</Text>
+                                <Text className="text-white text-base font-semibold">Criar Conta</Text>
                             )}
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.authSwitch}>
-                        <Text style={styles.authSwitchText}>Já tem conta? </Text>
+                    <View className="flex-row justify-center mt-8 items-center">
+                        <Text className="text-gray-600">Já tem conta? </Text>
                         <TouchableOpacity onPress={() => router.push('/login')}>
-                            <Text style={styles.linkButtonText}>Faça login aqui</Text>
+                            <Text className="text-purple-700 font-semibold underline ml-2">
+                                Faça login aqui
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -162,118 +167,5 @@ const RegisterScreen = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    outerContainer: {
-        flex: 1,
-        backgroundColor: '#667eea', // Cor de fundo sólida para substituir o gradiente
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-    },
-    authCard: {
-        backgroundColor: 'white',
-        padding: 48,
-        borderRadius: 16,
-        width: '100%',
-        maxWidth: 450,
-        elevation: 10,
-        shadowColor: 'rgba(0,0,0,0.1)',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-    },
-    backButton: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        padding: 8,
-    },
-    backButtonText: {
-        color: '#667eea',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    title: {
-        textAlign: 'center',
-        color: '#333',
-        marginBottom: 32,
-        fontSize: 28,
-        fontWeight: 'bold',
-    },
-    messageBox: {
-        padding: 16,
-        borderRadius: 8,
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    successMessage: {
-        backgroundColor: '#dcfce7',
-    },
-    errorMessage: {
-        backgroundColor: '#fee2e2',
-    },
-    successText: {
-        color: '#16a34a',
-        textAlign: 'center',
-    },
-    errorText: {
-        color: '#dc2626',
-        textAlign: 'center',
-    },
-    form: {
-        flexDirection: 'column',
-        gap: 24,
-    },
-    formGroup: {
-        flexDirection: 'column',
-    },
-    label: {
-        marginBottom: 8,
-        fontWeight: '600',
-        color: '#555',
-    },
-    input: {
-        padding: 16,
-        borderWidth: 2,
-        borderColor: '#e1e5e9',
-        borderRadius: 8,
-        fontSize: 16,
-    },
-    button: {
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    primaryButton: {
-        backgroundColor: '#667eea',
-    },
-    primaryButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    authSwitch: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 32,
-        alignItems: 'center',
-    },
-    authSwitchText: {
-        color: '#666',
-    },
-    linkButtonText: {
-        color: '#667eea',
-        fontWeight: '600',
-        textDecorationLine: 'underline',
-        marginLeft: 8,
-    },
-});
 
 export default RegisterScreen;

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { login as loginApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Definição do tipo para o estado do formulário
 interface FormData {
     email: string;
     password: string;
@@ -27,8 +26,6 @@ const LoginScreen = () => {
         try {
             const response = await loginApi(formData);
             authLogin(response.token, response.user);
-            
-            // Navega para a página principal após o login
             router.push('/dashboard'); 
         } catch (error: any) {
             setMessage(error.response?.data?.error || 'Erro ao fazer login');
@@ -45,34 +42,37 @@ const LoginScreen = () => {
     };
 
     return (
-        <View style={styles.outerContainer}>
+        <View className="flex-1 bg-purple-700">
             <Stack.Screen options={{ headerShown: false }} />
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.authCard}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Text style={styles.backButtonText}>← Voltar</Text>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+                <View className="bg-white p-12 rounded-2xl w-full max-w-[400px] shadow-2xl">
+                    <TouchableOpacity onPress={() => router.back()} className="absolute top-4 left-4 p-2">
+                        <Text className="text-purple-700 text-base font-semibold">← Voltar</Text>
                     </TouchableOpacity>
 
-                    <Text style={styles.title}>Entrar no Pet Finder</Text>
+                    <Text className="text-center text-gray-800 mb-8 text-3xl font-bold">
+                        Entrar no Pet Finder
+                    </Text>
 
-                    <View style={styles.demoInfo}>
-                        <Text style={styles.demoInfoText}>Usuários de teste:</Text>
-                        <Text style={styles.demoInfoText}>📧 maria@email.com | 🔑 123456</Text>
-                        <Text style={styles.demoInfoText}>📧 joao@email.com | 🔑 123456</Text>
+                    <View className="bg-gray-50 p-4 rounded-lg mb-6">
+                        <Text className="text-sm text-gray-600 text-center mb-1">Usuários de teste:</Text>
+                        <Text className="text-sm text-gray-600 text-center mb-1">📧 maria@email.com | 🔑 123456</Text>
+                        <Text className="text-sm text-gray-600 text-center">📧 joao@email.com | 🔑 123456</Text>
                     </View>
 
                     {message ? (
-                        <View style={styles.errorMessage}>
-                            <Text style={styles.errorText}>{message}</Text>
+                        <View className="bg-red-100 p-4 rounded-lg mb-4">
+                            <Text className="text-red-600 text-center">{message}</Text>
                         </View>
                     ) : null}
 
-                    <View style={styles.form}>
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Email:</Text>
+                    <View className="gap-6">
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Email:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="seu@email.com"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.email}
                                 onChangeText={(text) => handleInputChange('email', text)}
                                 keyboardType="email-address"
@@ -80,11 +80,12 @@ const LoginScreen = () => {
                             />
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Senha:</Text>
+                        <View>
+                            <Text className="mb-2 font-semibold text-gray-700">Senha:</Text>
                             <TextInput
-                                style={styles.input}
+                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
                                 placeholder="Sua senha"
+                                placeholderTextColor="#9CA3AF"
                                 value={formData.password}
                                 onChangeText={(text) => handleInputChange('password', text)}
                                 secureTextEntry
@@ -92,22 +93,24 @@ const LoginScreen = () => {
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.button, styles.primaryButton, loading && styles.buttonDisabled]}
+                            className={`p-4 rounded-lg items-center ${loading ? 'bg-purple-700 opacity-60' : 'bg-purple-700'}`}
                             onPress={handleSubmit}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>Entrar</Text>
+                                <Text className="text-white text-base font-semibold">Entrar</Text>
                             )}
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.authSwitch}>
-                        <Text style={styles.authSwitchText}>Não tem conta? </Text>
+                    <View className="flex-row justify-center mt-8 items-center">
+                        <Text className="text-gray-600">Não tem conta? </Text>
                         <TouchableOpacity onPress={() => router.push('/register')}>
-                            <Text style={styles.linkButtonText}>Cadastre-se aqui</Text>
+                            <Text className="text-purple-700 font-semibold underline ml-2">
+                                Cadastre-se aqui
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -115,122 +118,5 @@ const LoginScreen = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    outerContainer: {
-        flex: 1,
-        backgroundColor: '#667eea',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-    },
-    authCard: {
-        backgroundColor: 'white',
-        padding: 48,
-        borderRadius: 16,
-        width: '100%',
-        maxWidth: 400,
-        elevation: 10,
-        shadowColor: 'rgba(0,0,0,0.1)',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-    },
-    backButton: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        padding: 8,
-    },
-    backButtonText: {
-        color: '#667eea',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    title: {
-        textAlign: 'center',
-        color: '#333',
-        marginBottom: 32,
-        fontSize: 28,
-        fontWeight: 'bold',
-    },
-    demoInfo: {
-        backgroundColor: '#f8f9fa',
-        padding: 16,
-        borderRadius: 8,
-        marginBottom: 24,
-        textAlign: 'center',
-    },
-    demoInfoText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        marginVertical: 4,
-    },
-    errorMessage: {
-        backgroundColor: '#fee2e2',
-        padding: 16,
-        borderRadius: 8,
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    errorText: {
-        color: '#dc2626',
-        textAlign: 'center',
-    },
-    form: {
-        flexDirection: 'column',
-        gap: 24,
-    },
-    formGroup: {
-        flexDirection: 'column',
-    },
-    label: {
-        marginBottom: 8,
-        fontWeight: '600',
-        color: '#555',
-    },
-    input: {
-        padding: 16,
-        borderWidth: 2,
-        borderColor: '#e1e5e9',
-        borderRadius: 8,
-        fontSize: 16,
-    },
-    button: {
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    primaryButton: {
-        backgroundColor: '#667eea',
-    },
-    primaryButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    buttonDisabled: {
-        opacity: 0.6,
-    },
-    authSwitch: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 32,
-        alignItems: 'center',
-    },
-    authSwitchText: {
-        color: '#666',
-    },
-    linkButtonText: {
-        color: '#667eea',
-        fontWeight: '600',
-        textDecorationLine: 'underline',
-        marginLeft: 8,
-    },
-});
 
 export default LoginScreen;
