@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   View, 
   Text, 
-  StyleSheet, 
   FlatList, 
   RefreshControl,
   TouchableOpacity,
@@ -56,35 +55,49 @@ const AnnouncementList: React.FC<AnnouncementListProps> = ({
     );
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1">
             {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.sectionTitle}>{title}</Text>
-                    <Text style={styles.subtitle}>{announcements.length} anúncio(s) encontrado(s)</Text>
+            {title && (
+                <View className="flex-row justify-between items-center mb-6">
+                    <View className="flex-1">
+                        <Text className="text-2xl font-bold text-gray-800">
+                            {title}
+                        </Text>
+                        <Text className="text-sm text-gray-500 mt-1">
+                            {announcements.length} anúncio(s) encontrado(s)
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        className="flex-row items-center gap-2 bg-purple-600 px-4 py-2.5 rounded-lg shadow-md active:bg-purple-700"
+                    >
+                        <MaterialIcons name="refresh" size={18} color="#fff" />
+                        <Text className="text-white font-medium text-sm">
+                            Atualizar
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                    onPress={onRefresh}
-                    style={styles.refreshButton}
-                >
-                    <MaterialIcons name="refresh" size={20} color="#fff" />
-                    <Text style={styles.refreshButtonText}>Atualizar</Text>
-                </TouchableOpacity>
-            </View>
+            )}
 
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4F46E5" />
-                    <Text style={styles.loadingText}>Carregando anúncios...</Text>
+                <View className="flex-1 justify-center items-center py-12">
+                    <ActivityIndicator size="large" color="#7c3aed" />
+                    <Text className="mt-4 text-gray-600">
+                        Carregando anúncios...
+                    </Text>
                 </View>
             ) : announcements.length === 0 ? (
-                <View style={styles.emptyStateContainer}>
-                    <Text style={styles.emptyStateEmoji}>🐾</Text>
-                    <Text style={styles.emptyStateTitle}>Nenhum anúncio encontrado</Text>
-                    <Text style={styles.emptyStateText}>
+                <View className="flex-1 justify-center items-center py-12 px-4">
+                    <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
+                        <Text className="text-5xl">🐾</Text>
+                    </View>
+                    <Text className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                        Nenhum anúncio encontrado
+                    </Text>
+                    <Text className="text-sm text-gray-600 text-center max-w-xs">
                         {title.includes('Meus') 
-                            ? 'Você ainda não criou nenhum anúncio.' 
-                            : 'Seja o primeiro a criar um anúncio!'
+                            ? 'Você ainda não criou nenhum anúncio. Crie seu primeiro anúncio agora!' 
+                            : 'Seja o primeiro a criar um anúncio e ajudar a comunidade!'
                         }
                     </Text>
                 </View>
@@ -93,87 +106,20 @@ const AnnouncementList: React.FC<AnnouncementListProps> = ({
                     data={announcements}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.listContent}
+                    contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
                     refreshControl={
-                        <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+                        <RefreshControl 
+                            refreshing={loading} 
+                            onRefresh={onRefresh}
+                            colors={['#7c3aed']}
+                            tintColor="#7c3aed"
+                        />
                     }
+                    showsVerticalScrollIndicator={false}
                 />
             )}
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 16,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1F2937',
-    },
-    subtitle: {
-        color: '#4B5563',
-        marginTop: 4,
-    },
-    refreshButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: '#3B82F6',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    refreshButtonText: {
-        color: '#fff',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 48,
-    },
-    loadingText: {
-        marginTop: 16,
-        color: '#4B5563',
-    },
-    emptyStateContainer: {
-        textAlign: 'center',
-        paddingVertical: 48,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyStateEmoji: {
-        fontSize: 48,
-        marginBottom: 16,
-    },
-    emptyStateTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1F2937',
-        marginBottom: 8,
-    },
-    emptyStateText: {
-        color: '#4B5563',
-        textAlign: 'center',
-    },
-    listContent: {
-        gap: 16,
-        paddingBottom: 16,
-    },
-});
 
 export default AnnouncementList;

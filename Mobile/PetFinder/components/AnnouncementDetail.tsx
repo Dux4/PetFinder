@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TouchableOpacity, 
@@ -11,14 +10,14 @@ import {
   TextInput
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
-// Importe os serviços de API reais
 import { updateAnnouncementStatus, getComments, createComment } from '../services/api';
 
 interface Announcement {
     id: number;
     title: string;
-    image_data?: string; // NOVO: Propriedade para a imagem em Base64
+    image_data?: string;
     type: 'perdido' | 'encontrado';
     status: 'ativo' | 'encontrado';
     pet_name: string;
@@ -68,23 +67,17 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
     const loadComments = async () => {
       try {
         setLoadingComments(true);
-        console.log('Carregando comentários para anúncio:', announcement.id);
-        
         const commentsData = await getComments(announcement.id);
-        console.log('Comentários carregados:', commentsData);
-        
         setComments(commentsData || []);
       } catch (error) {
         console.error('Erro ao carregar comentários:', error);
         Alert.alert('Erro', 'Não foi possível carregar os comentários');
-        // Manter array vazio em caso de erro
         setComments([]);
       } finally {
         setLoadingComments(false);
       }
     };
 
-    // Só carrega comentários se tiver um ID válido
     if (announcement.id) {
       loadComments();
     }
@@ -95,10 +88,7 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
 
     setUpdating(true);
     try {
-      console.log('Atualizando status do anúncio:', announcement.id, 'para:', newStatus);
-      
       await updateAnnouncementStatus(announcement.id, newStatus);
-      
       Alert.alert('Sucesso', 'Status do anúncio atualizado com sucesso');
       onStatusUpdate();
       onBack();
@@ -111,23 +101,15 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
   };
 
   const handleCommentSubmit = async () => {
-    if (!newComment.trim() || !user || submittingComment) {
-      return;
-    }
+    if (!newComment.trim() || !user || submittingComment) return;
 
     setSubmittingComment(true);
     try {
-      console.log('Enviando comentário para anúncio:', announcement.id);
-      console.log('Conteúdo:', newComment.trim());
-      
       const response = await createComment(announcement.id, newComment.trim());
-      console.log('Resposta do comentário:', response);
       
       if (response && response.comment) {
-        // Adicionar o novo comentário à lista
         setComments(prevComments => [...prevComments, response.comment]);
         setNewComment('');
-        
         Alert.alert('Sucesso', 'Comentário enviado com sucesso');
       } else {
         throw new Error('Resposta inválida do servidor');
@@ -136,7 +118,7 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
       console.error('Erro ao enviar comentário:', error);
       
       let errorMessage = 'Erro ao enviar comentário';
-      if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as any).message === 'string') {
+      if (typeof error === 'object' && error !== null && 'message' in error) {
         errorMessage = (error as any).message;
       }
       
@@ -176,188 +158,264 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+    <ScrollView className="flex-1 bg-gray-50">
+      {/* Header com Gradiente */}
+      <LinearGradient
+        colors={['#7c3aed', '#6d28d9', '#5b21b6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="px-4 pt-12 pb-6"
+      >
+        <TouchableOpacity 
+          onPress={onBack} 
+          className="flex-row items-center gap-2 mb-4"
+        >
           <MaterialIcons name="arrow-back" size={24} color="#fff" />
-          <Text style={styles.backButtonText}>Voltar</Text>
+          <Text className="text-white/90 text-base">Voltar</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{announcement.pet_name}</Text>
-        <View style={styles.badgeContainer}>
-          <Text style={[styles.badge, announcement.type === 'perdido' ? styles.badgeRed : styles.badgeGreen]}>
-            {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
-          </Text>
-          <Text style={[styles.badge, announcement.status === 'ativo' ? styles.badgeBlue : styles.badgeGray]}>
-            {announcement.status === 'ativo' ? 'Ativo' : 'Encontrado'}
-          </Text>
+
+        <Text className="text-2xl font-bold text-white mb-3">
+          {announcement.pet_name}
+        </Text>
+
+        <View className="flex-row gap-2 flex-wrap">
+          <View className={`px-3 py-1.5 rounded-full ${
+            announcement.type === 'perdido' ? 'bg-red-100' : 'bg-green-100'
+          }`}>
+            <Text className={`text-xs font-semibold ${
+              announcement.type === 'perdido' ? 'text-red-700' : 'text-green-700'
+            }`}>
+              {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
+            </Text>
+          </View>
+          <View className={`px-3 py-1.5 rounded-full ${
+            announcement.status === 'ativo' ? 'bg-blue-100' : 'bg-gray-200'
+          }`}>
+            <Text className={`text-xs font-semibold ${
+              announcement.status === 'ativo' ? 'text-blue-700' : 'text-gray-700'
+            }`}>
+              {announcement.status === 'ativo' ? 'Ativo' : 'Encontrado'}
+            </Text>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Conteúdo */}
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <ScrollView contentContainerStyle={styles.cardScroll}>
+      <View className="p-4 -mt-4">
+        <View className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+          <View className="p-6">
             {/* Imagem */}
-            <View style={styles.imageWrapper}>
+            <View className="mb-6">
               {announcement.image_data ? (
                 <Image
-                  // Usa o Base64 para exibir a imagem
                   source={{ uri: announcement.image_data }} 
-                  style={styles.image}
+                  className="w-full h-80 rounded-xl"
+                  resizeMode="cover"
                 />
               ) : (
-                <View style={styles.noImagePlaceholder}>
-                  <Text style={styles.noImageEmoji}>🐾</Text>
-                  <Text>Sem foto disponível</Text>
+                <View className="w-full h-80 bg-gray-200 rounded-xl justify-center items-center">
+                  <Text className="text-6xl mb-2 opacity-40">🐾</Text>
+                  <Text className="text-gray-500">Sem foto disponível</Text>
                 </View>
               )}
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationTitle}>📍 Localização</Text>
-                <Text style={styles.locationText}>{announcement.neighborhood}, Salvador - BA</Text>
+
+              {/* Card de Localização */}
+              <View className="bg-blue-50 p-4 rounded-xl mt-4 border border-blue-100">
+                <Text className="font-semibold text-gray-800 mb-2">
+                  📍 Localização
+                </Text>
+                <Text className="text-gray-600">
+                  {announcement.neighborhood}, Salvador - BA
+                </Text>
                 {announcement.latitude && announcement.longitude && (
-                  <Text style={styles.coordsText}>
+                  <Text className="text-xs text-gray-500 mt-1">
                     Lat: {announcement.latitude}, Lng: {announcement.longitude}
                   </Text>
                 )}
               </View>
             </View>
 
-            {/* Detalhes */}
-            <View style={styles.detailsWrapper}>
-              <View style={styles.detailsSection}>
-                <Text style={styles.sectionTitle}>Informações do Pet</Text>
-                <Text style={styles.descriptionText}>{announcement.description}</Text>
-              </View>
-
-              {/* Informações de Contato */}
-              <View style={styles.detailsCard}>
-                <Text style={styles.contactTitle}>📞 Informações de Contato</Text>
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactText}><Text style={styles.contactLabel}>Nome:</Text> {announcement.user?.name}</Text>
-                  <Text style={styles.contactText}><Text style={styles.contactLabel}>Telefone:</Text> {announcement.user?.phone}</Text>
-                  <Text style={styles.contactText}><Text style={styles.contactLabel}>Email:</Text> {announcement.user?.email}</Text>
-                </View>
-              </View>
-
-              {/* Datas */}
-              <View style={styles.detailsCard}>
-                <Text style={styles.contactTitle}>📅 Datas Importantes</Text>
-                <View style={styles.contactInfo}>
-                  <Text style={styles.contactText}>
-                    <Text style={styles.contactLabel}>Publicado em:</Text> {formatDate(announcement.created_at)}
-                  </Text>
-                  {announcement.status === 'encontrado' && announcement.found_date && (
-                    <Text style={styles.contactTextGreen}>
-                      <Text style={styles.contactLabel}>✅ Encontrado em:</Text> {formatDate(announcement.found_date)}
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {/* Ações do Proprietário */}
-              {isOwner && announcement.status === 'ativo' && (
-                <View style={styles.ownerActionsCard}>
-                  <Text style={styles.ownerActionsTitle}>Gerenciar Anúncio</Text>
-                  <Text style={styles.ownerActionsText}>
-                    Encontrou seu pet? Marque este anúncio como encontrado para que ele saia da lista de busca.
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => handleStatusUpdate('encontrado')}
-                    disabled={updating}
-                    style={[styles.statusButton, updating && styles.statusButtonDisabled]}
-                  >
-                    {updating ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={styles.statusButtonText}>✅ Marcar como Encontrado</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              )}
+            {/* Informações do Pet */}
+            <View className="mb-6">
+              <Text className="text-xl font-bold text-gray-800 mb-3">
+                Informações do Pet
+              </Text>
+              <Text className="text-gray-600 leading-6">
+                {announcement.description}
+              </Text>
             </View>
-          </ScrollView>
-        </View>
 
-        {/* Seção de Comentários */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.commentsTitle}>💬 Comentários ({comments.length})</Text>
-
-          {/* Formulário de Comentário */}
-          {user ? (
-            <View style={styles.commentForm}>
-              <View style={styles.commentAvatar}>
-                <Text style={styles.commentAvatarText}>
-                  {user.name.charAt(0).toUpperCase()}
-                </Text>
+            {/* Card de Contato */}
+            <View className="bg-purple-50 p-5 rounded-xl mb-6 border border-purple-100">
+              <Text className="font-semibold text-gray-800 mb-4">
+                📞 Informações de Contato
+              </Text>
+              <View className="gap-2">
+                <View className="flex-row items-center gap-2">
+                  <Feather name="user" size={16} color="#7c3aed" />
+                  <Text className="text-gray-600">
+                    <Text className="font-medium text-gray-800">Nome:</Text> {announcement.user?.name}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="phone" size={16} color="#7c3aed" />
+                  <Text className="text-gray-600">
+                    <Text className="font-medium text-gray-800">Telefone:</Text> {announcement.user?.phone}
+                  </Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="mail" size={16} color="#7c3aed" />
+                  <Text className="text-gray-600">
+                    <Text className="font-medium text-gray-800">Email:</Text> {announcement.user?.email}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.commentInputWrapper}>
-                <TextInput
-                  style={styles.commentInput}
-                  placeholder="Adicione um comentário..."
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  multiline
-                  editable={!submittingComment}
-                />
+            </View>
+
+            {/* Card de Datas */}
+            <View className="bg-gray-50 p-5 rounded-xl mb-6">
+              <Text className="font-semibold text-gray-800 mb-4">
+                📅 Datas Importantes
+              </Text>
+              <View className="gap-2">
+                <Text className="text-gray-600">
+                  <Text className="font-medium text-gray-800">Publicado em:</Text>{' '}
+                  {formatDate(announcement.created_at)}
+                </Text>
+                {announcement.status === 'encontrado' && announcement.found_date && (
+                  <Text className="text-green-600">
+                    <Text className="font-medium">✅ Encontrado em:</Text>{' '}
+                    {formatDate(announcement.found_date)}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Ações do Proprietário */}
+            {isOwner && announcement.status === 'ativo' && (
+              <View className="bg-amber-50 border border-amber-200 p-5 rounded-xl">
+                <Text className="font-semibold text-gray-800 mb-3">
+                  Gerenciar Anúncio
+                </Text>
+                <Text className="text-gray-600 mb-4">
+                  Encontrou seu pet? Marque este anúncio como encontrado para que ele saia da lista de busca.
+                </Text>
                 <TouchableOpacity
-                  onPress={handleCommentSubmit}
-                  disabled={!newComment.trim() || submittingComment}
-                  style={[styles.commentButton, (!newComment.trim() || submittingComment) && styles.commentButtonDisabled]}
+                  onPress={() => handleStatusUpdate('encontrado')}
+                  disabled={updating}
+                  className={`bg-green-600 py-4 rounded-xl items-center ${
+                    updating ? 'opacity-50' : 'active:bg-green-700'
+                  }`}
                 >
-                  {submittingComment ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                  {updating ? (
+                    <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.commentButtonText}>Comentar</Text>
+                    <Text className="text-white font-semibold">
+                      ✅ Marcar como Encontrado
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>
+            )}
+          </View>
+        </View>
+
+        {/* Seção de Comentários */}
+        <View className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <Text className="text-xl font-bold text-gray-800 mb-6">
+            💬 Comentários ({comments.length})
+          </Text>
+
+          {/* Formulário de Comentário */}
+          {user ? (
+            <View className="mb-6">
+              <View className="flex-row gap-3 mb-3">
+                <View className="w-10 h-10 bg-purple-600 rounded-full justify-center items-center">
+                  <Text className="text-white font-medium">
+                    {user.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View className="flex-1">
+                  <TextInput
+                    className="w-full p-3 border border-gray-300 rounded-xl h-24 bg-gray-50"
+                    placeholder="Adicione um comentário..."
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    editable={!submittingComment}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={handleCommentSubmit}
+                disabled={!newComment.trim() || submittingComment}
+                className={`bg-purple-600 py-3 px-5 rounded-xl self-end ${
+                  (!newComment.trim() || submittingComment) ? 'opacity-50' : 'active:bg-purple-700'
+                }`}
+              >
+                {submittingComment ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-white font-medium">Comentar</Text>
+                )}
+              </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.loginMessage}>
-              <Text style={styles.loginMessageText}>Faça login para comentar</Text>
+            <View className="mb-6 p-4 bg-gray-50 rounded-xl items-center">
+              <Text className="text-gray-600">Faça login para comentar</Text>
             </View>
           )}
 
           {/* Lista de Comentários */}
-          <View style={styles.commentsList}>
+          <View className="gap-4">
             {loadingComments ? (
-              <View style={styles.commentsLoading}>
-                <ActivityIndicator size="small" color="#4F46E5" />
-                <Text style={styles.commentsLoadingText}>Carregando comentários...</Text>
+              <View className="items-center py-8">
+                <ActivityIndicator size="small" color="#7c3aed" />
+                <Text className="text-gray-500 mt-2">Carregando comentários...</Text>
               </View>
             ) : comments.length === 0 ? (
-              <View style={styles.commentsLoading}>
-                <Text style={styles.noCommentsEmoji}>💬</Text>
-                <Text style={styles.noCommentsText}>Nenhum comentário ainda</Text>
-                <Text style={styles.noCommentsSubText}>Seja o primeiro a comentar!</Text>
+              <View className="items-center py-8">
+                <Text className="text-4xl mb-2 opacity-40">💬</Text>
+                <Text className="text-gray-600 font-medium">Nenhum comentário ainda</Text>
+                <Text className="text-gray-400 text-xs mt-1">Seja o primeiro a comentar!</Text>
               </View>
             ) : (
               comments.map((comment) => (
-                <View key={comment.id} style={styles.commentItem}>
-                  <View style={styles.commentItemAvatarWrapper}>
-                    <View style={[styles.commentAvatar, comment.user_id === announcement.user_id ? styles.commentOwnerAvatar : styles.commentUserAvatar]}>
-                      <Text style={styles.commentAvatarText}>
-                        {comment.user.name.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                <View key={comment.id} className="flex-row gap-3">
+                  <View className={`w-10 h-10 rounded-full justify-center items-center ${
+                    comment.user_id === announcement.user_id ? 'bg-amber-500' : 'bg-gray-400'
+                  }`}>
+                    <Text className="text-white font-medium text-sm">
+                      {comment.user.name.charAt(0).toUpperCase()}
+                    </Text>
                   </View>
-                  <View style={styles.commentContentWrapper}>
-                    <View style={[styles.commentBubble, comment.user_id === announcement.user_id ? styles.commentOwnerBubble : styles.commentUserBubble]}>
-                      <View style={styles.commentHeader}>
-                        <View style={styles.commentAuthorWrapper}>
-                          <Text style={styles.commentAuthorText}>
+                  <View className="flex-1">
+                    <View className={`p-4 rounded-xl ${
+                      comment.user_id === announcement.user_id 
+                        ? 'bg-amber-50 border border-amber-200' 
+                        : 'bg-gray-50'
+                    }`}>
+                      <View className="flex-row justify-between items-center mb-2">
+                        <View className="flex-row items-center gap-2">
+                          <Text className="font-medium text-gray-800">
                             {comment.user.name}
                           </Text>
                           {comment.user_id === announcement.user_id && (
-                            <Text style={styles.commentOwnerBadge}>👑 Autor</Text>
+                            <View className="bg-amber-100 px-2 py-0.5 rounded-full">
+                              <Text className="text-amber-800 text-xs font-medium">
+                                👑 Autor
+                              </Text>
+                            </View>
                           )}
                         </View>
-                        <Text style={styles.commentDateText}>
+                        <Text className="text-xs text-gray-500">
                           {formatCommentDate(comment.created_at)}
                         </Text>
                       </View>
-                      <Text style={styles.commentText}>{comment.content}</Text>
+                      <Text className="text-gray-600 leading-5">
+                        {comment.content}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -369,340 +427,5 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    backgroundColor: '#4F46E5', // Cor sólida para o gradiente
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backButtonText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 9999,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  badgeRed: {
-    backgroundColor: '#FEE2E2',
-    color: '#DC2626',
-  },
-  badgeGreen: {
-    backgroundColor: '#DCFCE7',
-    color: '#16A34A',
-  },
-  badgeBlue: {
-    backgroundColor: '#DBEAFE',
-    color: '#3B82F6',
-  },
-  badgeGray: {
-    backgroundColor: '#E5E7EB',
-    color: '#4B5563',
-  },
-  content: {
-    paddingVertical: 32,
-    paddingHorizontal: 16,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-    overflow: 'hidden',
-    marginBottom: 32,
-  },
-  cardScroll: {
-    padding: 32,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 32,
-  },
-  imageWrapper: {
-    flex: 1,
-    height: 320,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  noImagePlaceholder: {
-    flex: 1,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noImageEmoji: {
-    fontSize: 64,
-    marginBottom: 8,
-    color: '#9CA3AF',
-  },
-  locationInfo: {
-    backgroundColor: '#EFF6FF',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  locationTitle: {
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  locationText: {
-    color: '#4B5563',
-  },
-  coordsText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  detailsWrapper: {
-    flex: 1,
-    gap: 24,
-  },
-  detailsSection: {
-    gap: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  descriptionText: {
-    color: '#4B5563',
-    lineHeight: 24,
-  },
-  detailsCard: {
-    backgroundColor: '#F9FAFB',
-    padding: 24,
-    borderRadius: 8,
-  },
-  contactTitle: {
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  contactInfo: {
-    gap: 8,
-  },
-  contactText: {
-    color: '#4B5563',
-  },
-  contactLabel: {
-    fontWeight: '500',
-  },
-  contactTextGreen: {
-    color: '#16A34A',
-  },
-  ownerActionsCard: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FEF3C7',
-    borderWidth: 1,
-    padding: 24,
-    borderRadius: 8,
-  },
-  ownerActionsTitle: {
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  ownerActionsText: {
-    color: '#4B5563',
-    marginBottom: 16,
-  },
-  statusButton: {
-    width: '100%',
-    backgroundColor: '#22C55E',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  statusButtonText: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  statusButtonDisabled: {
-    opacity: 0.5,
-  },
-  commentsSection: {
-    paddingVertical: 32,
-  },
-  commentsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 24,
-  },
-  commentForm: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 32,
-  },
-  commentAvatar: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#3B82F6',
-    borderRadius: 9999,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  commentAvatarText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  commentInputWrapper: {
-    flex: 1,
-    gap: 8,
-  },
-  commentInput: {
-    width: '100%',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    height: 96,
-    textAlignVertical: 'top',
-  },
-  commentButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    alignSelf: 'flex-end',
-  },
-  commentButtonText: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  commentButtonDisabled: {
-    opacity: 0.5,
-  },
-  loginMessage: {
-    marginBottom: 32,
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  loginMessageText: {
-    color: '#4B5563',
-  },
-  commentsList: {
-    gap: 16,
-  },
-  commentsLoading: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  commentsLoadingText: {
-    color: '#6B7280',
-    marginTop: 8,
-  },
-  noCommentsEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-    color: '#9CA3AF',
-  },
-  noCommentsText: {
-    color: '#6B7280',
-  },
-  noCommentsSubText: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  commentItem: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  commentItemAvatarWrapper: {
-    flexShrink: 0,
-  },
-  commentOwnerAvatar: {
-    backgroundColor: '#F59E0B',
-  },
-  commentUserAvatar: {
-    backgroundColor: '#9CA3AF',
-  },
-  commentContentWrapper: {
-    flex: 1,
-  },
-  commentBubble: {
-    padding: 16,
-    borderRadius: 8,
-  },
-  commentOwnerBubble: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FEF3C7',
-    borderWidth: 1,
-  },
-  commentUserBubble: {
-    backgroundColor: '#F9FAFB',
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  commentAuthorWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  commentAuthorText: {
-    fontWeight: '500',
-    color: '#1F2937',
-  },
-  commentOwnerBadge: {
-    backgroundColor: '#FFFBEB',
-    color: '#92400E',
-    fontSize: 10,
-    borderRadius: 9999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    fontWeight: '500',
-  },
-  commentDateText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  commentText: {
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-});
 
 export default AnnouncementDetail;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   Image, 
@@ -15,7 +14,7 @@ import { updateAnnouncementStatus } from '../services/api';
 interface Announcement {
     id: number;
     title: string;
-    image_data?: string; // NOVO: Propriedade para a imagem em Base64
+    image_data?: string;
     type: 'perdido' | 'encontrado';
     status: 'ativo' | 'encontrado';
     pet_name: string;
@@ -101,87 +100,118 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      className="bg-white rounded-2xl shadow-lg overflow-hidden active:opacity-90"
       onPress={handleViewDetail}
       activeOpacity={0.9}
     >
       {/* Imagem */}
-      <View style={styles.imageContainer}>
+      <View className="h-48 relative">
         {announcement.image_data ? (
           <Image
-            // Usa o Base64 para exibir a imagem
             source={{ uri: announcement.image_data }} 
-            style={styles.image}
+            className="w-full h-full"
             resizeMode="cover"
           />
         ) : (
-          <View style={styles.noImageContainer}>
-            <Text style={styles.noImageEmoji}>🐾</Text>
-            <Text style={styles.noImageText}>Sem foto</Text>
+          <View className="w-full h-full bg-gray-200 justify-center items-center">
+            <Text className="text-5xl mb-2 opacity-40">🐾</Text>
+            <Text className="text-sm text-gray-500">Sem foto</Text>
           </View>
         )}
         
         {/* Status Badge */}
-        <View style={styles.statusBadgeContainer}>
-          <Text style={[styles.statusBadge, announcement.type === 'perdido' ? styles.statusBadgeRed : styles.statusBadgeGreen]}>
-            {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
-          </Text>
+        <View className="absolute top-3 right-3">
+          <View className={`px-3 py-1.5 rounded-full ${
+            announcement.type === 'perdido' 
+              ? 'bg-red-100' 
+              : 'bg-green-100'
+          }`}>
+            <Text className={`text-xs font-semibold ${
+              announcement.type === 'perdido' 
+                ? 'text-red-700' 
+                : 'text-green-700'
+            }`}>
+              {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
+            </Text>
+          </View>
         </View>
       </View>
 
       {/* Conteúdo */}
-      <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
+      <View className="p-5">
+        {/* Título e Badge de Encontrado */}
+        <View className="flex-row justify-between items-start mb-3">
+          <Text className="text-xl font-bold text-gray-800 flex-1" numberOfLines={1}>
             {announcement.pet_name || 'Nome não informado'}
           </Text>
           {announcement.status === 'encontrado' && (
-            <Text style={styles.foundBadge}>
-              ✅ Encontrado
-            </Text>
+            <View className="bg-green-100 px-2.5 py-1 rounded-full ml-2">
+              <Text className="text-xs font-semibold text-green-700">
+                ✅ Encontrado
+              </Text>
+            </View>
           )}
         </View>
 
-        <Text style={styles.descriptionText} numberOfLines={3}>
+        {/* Descrição */}
+        <Text className="text-sm text-gray-600 mb-4 leading-5" numberOfLines={3}>
           {announcement.description || 'Sem descrição'}
         </Text>
 
         {/* Localização */}
-        <View style={styles.infoRow}>
-          <Feather name="map-pin" size={16} color="#4B5563" />
-          <Text style={styles.infoText}>{announcement.neighborhood || 'Local não informado'}</Text>
+        <View className="flex-row items-center mb-4">
+          <Feather name="map-pin" size={16} color="#6B7280" />
+          <Text className="text-sm text-gray-600 ml-2">
+            {announcement.neighborhood || 'Local não informado'}
+          </Text>
         </View>
 
-        {/* Contato */}
-        <View style={styles.contactCard}>
-          <Text style={styles.contactName}>{announcement.user?.name || 'Nome não informado'}</Text>
-          <Text style={styles.contactPhone}>{announcement.user?.phone || 'Telefone não informado'}</Text>
+        {/* Card de Contato */}
+        <View className="bg-purple-50 p-3 rounded-xl mb-4 border border-purple-100">
+          <View className="flex-row items-center gap-2 mb-1">
+            <Feather name="user" size={14} color="#7c3aed" />
+            <Text className="text-sm font-semibold text-gray-800">
+              {announcement.user?.name || 'Nome não informado'}
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Feather name="phone" size={14} color="#7c3aed" />
+            <Text className="text-sm text-gray-600">
+              {announcement.user?.phone || 'Telefone não informado'}
+            </Text>
+          </View>
         </View>
 
         {/* Data */}
-        <Text style={styles.dateText}>
+        <Text className="text-xs text-gray-500 mb-4">
           Publicado em {formatDate(announcement.created_at)}
         </Text>
 
         {/* Ações */}
-        <View style={styles.actions}>
+        <View className="gap-2">
           <TouchableOpacity
             onPress={handleViewDetail}
-            style={styles.detailsButton}
+            className="bg-purple-600 py-3 px-4 rounded-xl border border-purple-700 active:bg-purple-700"
           >
-            <Text style={styles.detailsButtonText}>Ver Detalhes</Text>
+            <Text className="text-white font-semibold text-center text-sm">
+              Ver Detalhes
+            </Text>
           </TouchableOpacity>
 
           {showOwnerActions && isOwner && announcement.status === 'ativo' && (
             <TouchableOpacity
               onPress={() => handleStatusUpdate('encontrado')}
               disabled={updating}
-              style={[styles.statusButton, updating && styles.disabledButton]}
+              className={`bg-green-600 py-3 px-4 rounded-xl border border-green-700 active:bg-green-700 ${
+                updating ? 'opacity-50' : ''
+              }`}
             >
               {updating ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.statusButtonText}>✅ Marcar como Encontrado</Text>
+                <Text className="text-white font-semibold text-center text-sm">
+                  ✅ Marcar como Encontrado
+                </Text>
               )}
             </TouchableOpacity>
           )}
@@ -190,162 +220,5 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  imageContainer: {
-    height: 192,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  noImageContainer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noImageEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
-    color: '#9CA3AF',
-  },
-  noImageText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  statusBadgeContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9999,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  statusBadgeRed: {
-    backgroundColor: '#FEE2E2',
-    color: '#DC2626',
-  },
-  statusBadgeGreen: {
-    backgroundColor: '#DCFCE7',
-    color: '#16A34A',
-  },
-  content: {
-    padding: 24,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    flexShrink: 1,
-  },
-  foundBadge: {
-    backgroundColor: '#DCFCE7',
-    color: '#16A34A',
-    fontSize: 12,
-    borderRadius: 9999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
-  descriptionText: {
-    color: '#4B5563',
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  infoText: {
-    color: '#4B5563',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  contactCard: {
-    backgroundColor: '#F9FAFB',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  contactName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  contactPhone: {
-    fontSize: 14,
-    color: '#4B5563',
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 16,
-  },
-  actions: {
-    gap: 8,
-  },
-  detailsButton: {
-    width: '100%',
-    backgroundColor: '#3B82F6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    alignItems: 'center',
-  },
-  detailsButtonText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  statusButton: {
-    width: '100%',
-    backgroundColor: '#22C55E',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#16A34A',
-    alignItems: 'center',
-  },
-  statusButtonText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-});
 
 export default AnnouncementCard;
