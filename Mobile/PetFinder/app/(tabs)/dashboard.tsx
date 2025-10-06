@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { Stack, useRouter } from 'expo-router';
-// Importe suas funções de API
+import { LinearGradient } from 'expo-linear-gradient';
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../../services/api';
 
-// IMPORTANTE:
-// Importe todos os componentes que já convertemos
+// Componentes já convertidos
 import AnnouncementList from '../../components/AnnouncementList';
 import AnnouncementDetail from '../../components/AnnouncementDetail';
 import AnnouncementForm from '../../components/AnnouncementForm';
-import Map from '../../components/ui/Map'; // Importação do Map corrigida
+import Map from '../../components/ui/Map';
 
 interface Announcement {
     id: number;
@@ -29,7 +28,6 @@ interface Announcement {
     };
     user_id: number;
 }
-
 
 const DashboardScreen = () => {
     const { user, logout } = useAuth();
@@ -51,9 +49,9 @@ const DashboardScreen = () => {
         try {
             setLoading(true);
             const [allActive, allFound, myAnnounces] = await Promise.all([
-              getAllAnnouncements('ativo'),
-              getAllAnnouncements('encontrado'),
-              getMyAnnouncements()
+                getAllAnnouncements('ativo'),
+                getAllAnnouncements('encontrado'),
+                getMyAnnouncements()
             ]);
             
             setAnnouncements(allActive);
@@ -99,43 +97,96 @@ const DashboardScreen = () => {
         );
     }
     
-    // Se não houver anúncio selecionado, mostra o dashboard
+    // Dashboard principal
     return (
-        <View style={styles.dashboardContainer}>
+        <View className="flex-1 bg-gray-50">
             <Stack.Screen options={{ headerShown: false }} />
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerContent}>
-                    <View style={styles.headerInfo}>
-                        <Text style={styles.headerEmoji}>🐾</Text>
+            
+            {/* Header com Gradiente */}
+            <LinearGradient
+                colors={['#7c3aed', '#6d28d9', '#5b21b6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="px-4 pb-6 pt-12 shadow-lg"
+            >
+                <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center gap-4">
+                        <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center">
+                            <Text className="text-3xl">🐾</Text>
+                        </View>
                         <View>
-                            <Text style={styles.headerTitle}>Pet Finder Salvador</Text>
-                            <Text style={styles.headerSubtitle}>Olá, {user?.name || 'Visitante'}!</Text>
+                            <Text className="text-2xl font-bold text-white">Pet Finder</Text>
+                            <Text className="text-sm text-white/90">
+                                Olá, {user?.name || 'Visitante'}!
+                            </Text>
                         </View>
                     </View>
-                    <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-                        <Text style={styles.logoutButtonText}>Sair</Text>
+                    
+                    <TouchableOpacity 
+                        onPress={logout} 
+                        className="bg-white/20 px-4 py-2 rounded-lg border border-white/30"
+                    >
+                        <Text className="text-white font-semibold">Sair</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            {/* Navigation Tabs */}
-            <View style={styles.navTabs}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.navTabsContent}>
+                {/* Stats Cards no Header */}
+                <View className="flex-row gap-2 mt-6">
+                    <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
+                        <Text className="text-white/80 text-xs mb-1">Ativos</Text>
+                        <Text className="text-white text-2xl font-bold">{announcements.length}</Text>
+                    </View>
+                    <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
+                        <Text className="text-white/80 text-xs mb-1">Meus</Text>
+                        <Text className="text-white text-2xl font-bold">{myAnnouncements.length}</Text>
+                    </View>
+                    <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
+                        <Text className="text-white/80 text-xs mb-1">Encontrados</Text>
+                        <Text className="text-white text-2xl font-bold">{foundPets.length}</Text>
+                    </View>
+                </View>
+            </LinearGradient>
+
+            {/* Navigation Tabs com estilo moderno */}
+            <View className="bg-white border-b border-gray-200 shadow-sm">
+                <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
+                >
                     {tabs.map((tab) => (
                         <TouchableOpacity
                             key={tab.id}
                             onPress={() => setActiveTab(tab.id)}
-                            style={[
-                                styles.tabButton,
-                                activeTab === tab.id && styles.activeTabButton
-                            ]}
+                            className={`flex-row items-center gap-2 px-4 py-3 rounded-xl ${
+                                activeTab === tab.id 
+                                    ? 'bg-purple-700 shadow-md' 
+                                    : 'bg-gray-100'
+                            }`}
                         >
-                            <Text style={[styles.tabIcon, activeTab === tab.id && styles.activeTabIcon]}>{tab.icon}</Text>
-                            <Text style={[styles.tabLabel, activeTab === tab.id && styles.activeTabLabel]}>{tab.label}</Text>
+                            <Text className="text-base">{tab.icon}</Text>
+                            <Text 
+                                className={`text-sm font-semibold ${
+                                    activeTab === tab.id ? 'text-white' : 'text-gray-700'
+                                }`}
+                            >
+                                {tab.label}
+                            </Text>
                             {tab.count !== undefined && (
-                                <View style={[styles.tabCountBadge, activeTab === tab.id && styles.activeTabCountBadge]}>
-                                    <Text style={styles.tabCountText}>{tab.count}</Text>
+                                <View 
+                                    className={`px-2 py-1 rounded-full min-w-[24px] items-center ${
+                                        activeTab === tab.id 
+                                            ? 'bg-purple-900' 
+                                            : 'bg-white'
+                                    }`}
+                                >
+                                    <Text 
+                                        className={`text-xs font-bold ${
+                                            activeTab === tab.id ? 'text-white' : 'text-gray-700'
+                                        }`}
+                                    >
+                                        {tab.count}
+                                    </Text>
                                 </View>
                             )}
                         </TouchableOpacity>
@@ -144,165 +195,127 @@ const DashboardScreen = () => {
             </View>
 
             {/* Main Content */}
-            <ScrollView style={styles.mainContent}>
+            <ScrollView className="flex-1 p-4">
                 {activeTab === 'todos' && (
-                    <AnnouncementList 
-                        announcements={announcements} 
-                        loading={loading}
-                        onRefresh={loadData}
-                        title="Todos os Anúncios Ativos"
-                        showOwnerActions={false}
-                        onViewDetail={handleViewDetail}
-                    />
+                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                        <View className="flex-row items-center gap-2 mb-4">
+                            <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
+                                <Text className="text-xl">📋</Text>
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-gray-800">
+                                    Todos os Anúncios
+                                </Text>
+                                <Text className="text-sm text-gray-500">
+                                    Pets perdidos e encontrados na comunidade
+                                </Text>
+                            </View>
+                        </View>
+                        <AnnouncementList 
+                            announcements={announcements} 
+                            loading={loading}
+                            onRefresh={loadData}
+                            title=""
+                            showOwnerActions={false}
+                            onViewDetail={handleViewDetail}
+                        />
+                    </View>
                 )}
                 
                 {activeTab === 'meus' && (
-                    <AnnouncementList 
-                        announcements={myAnnouncements} 
-                        loading={loading}
-                        onRefresh={loadData}
-                        title="Meus Anúncios"
-                        showOwnerActions={true}
-                        onViewDetail={handleViewDetail}
-                    />
+                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                        <View className="flex-row items-center gap-2 mb-4">
+                            <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
+                                <Text className="text-xl">👤</Text>
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-gray-800">
+                                    Meus Anúncios
+                                </Text>
+                                <Text className="text-sm text-gray-500">
+                                    Gerencie suas publicações
+                                </Text>
+                            </View>
+                        </View>
+                        <AnnouncementList 
+                            announcements={myAnnouncements} 
+                            loading={loading}
+                            onRefresh={loadData}
+                            title=""
+                            showOwnerActions={true}
+                            onViewDetail={handleViewDetail}
+                        />
+                    </View>
                 )}
                 
                 {activeTab === 'encontrados' && (
-                    <AnnouncementList 
-                        announcements={foundPets} 
-                        loading={loading}
-                        onRefresh={loadData}
-                        title="Pets Encontrados pela Comunidade"
-                        showOwnerActions={false}
-                        onViewDetail={handleViewDetail}
-                    />
+                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                        <View className="flex-row items-center gap-2 mb-4">
+                            <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
+                                <Text className="text-xl">✅</Text>
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-gray-800">
+                                    Pets Encontrados
+                                </Text>
+                                <Text className="text-sm text-gray-500">
+                                    Histórias de sucesso da comunidade
+                                </Text>
+                            </View>
+                        </View>
+                        <AnnouncementList 
+                            announcements={foundPets} 
+                            loading={loading}
+                            onRefresh={loadData}
+                            title=""
+                            showOwnerActions={false}
+                            onViewDetail={handleViewDetail}
+                        />
+                    </View>
                 )}
                 
                 {activeTab === 'mapa' && (
-                    <Map announcements={announcements} onViewDetail={handleViewDetail} />
+                    <View className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+                        <View className="p-4 border-b border-gray-100">
+                            <View className="flex-row items-center gap-2">
+                                <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">🗺️</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Mapa Interativo
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Visualize os pets por localização
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                        <Map announcements={announcements} onViewDetail={handleViewDetail} />
+                    </View>
                 )}
                 
                 {activeTab === 'criar' && (
-                    <AnnouncementForm onSuccess={loadData} />
+                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                        <View className="flex-row items-center gap-2 mb-4">
+                            <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
+                                <Text className="text-xl">➕</Text>
+                            </View>
+                            <View>
+                                <Text className="text-lg font-bold text-gray-800">
+                                    Novo Anúncio
+                                </Text>
+                                <Text className="text-sm text-gray-500">
+                                    Compartilhe com a comunidade
+                                </Text>
+                            </View>
+                        </View>
+                        <AnnouncementForm onSuccess={loadData} />
+                    </View>
                 )}
             </ScrollView>
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-  dashboardContainer: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  loadingText: {
-    marginTop: 16,
-    color: '#4B5563',
-  },
-  header: {
-    backgroundColor: '#4F46E5', // Cor sólida para substituir o gradiente
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  headerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  headerEmoji: {
-    fontSize: 32,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#DBEAFE',
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  logoutButtonText: {
-    color: '#fff',
-  },
-  navTabs: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  navTabsContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  tabButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  tabIcon: {
-    fontSize: 16,
-  },
-  tabLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#4B5563',
-  },
-  activeTabButton: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4338CA',
-  },
-  activeTabIcon: {
-    color: '#fff',
-  },
-  activeTabLabel: {
-    color: '#fff',
-  },
-  tabCountBadge: {
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9999,
-  },
-  activeTabCountBadge: {
-    backgroundColor: '#6366F1',
-  },
-  tabCountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4B5563',
-  },
-  mainContent: {
-    padding: 16,
-  },
-});
 
 export default DashboardScreen;
