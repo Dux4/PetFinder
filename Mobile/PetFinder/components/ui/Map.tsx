@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, Image as RNImage } from 'react-native';
-import { Platform } from 'react-native';
+import { Text, View, Platform } from 'react-native';
 
 interface Announcement {
     id: number;
     title: string;
-    image_data?: string; // NOVO: Usa a propriedade Base64 da imagem
+    image_data?: string;
     type: 'perdido' | 'encontrado';
     status: 'ativo' | 'encontrado';
     pet_name: string;
@@ -34,9 +33,8 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
 
     React.useEffect(() => {
         if (Platform.OS === 'web') {
-            // Carregue as bibliotecas do Leaflet dinamicamente
             const loadLeaflet = async () => {
-                // Carregue o CSS do Leaflet
+                // Carrega CSS do Leaflet
                 if (!document.querySelector('#leaflet-css')) {
                     const link = document.createElement('link');
                     link.id = 'leaflet-css';
@@ -45,7 +43,7 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                     document.head.appendChild(link);
                 }
 
-                // Carregue o JS do Leaflet
+                // Carrega JS do Leaflet
                 if (!window.L) {
                     const script = document.createElement('script');
                     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -59,18 +57,17 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
             const initializeMap = () => {
                 const mapElement = document.getElementById('leaflet-map');
                 if (mapElement && window.L) {
-                    // Limpe o mapa existente se houver
                     mapElement.innerHTML = '';
 
                     const map = window.L.map('leaflet-map').setView([-12.9714, -38.5014], 11);
 
-                    // Adicione tiles do OpenStreetMap
+                    // Tiles do OpenStreetMap
                     window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     }).addTo(map);
 
-                    // Adicione marcadores
+                    // Adiciona marcadores
                     announcements.forEach(announcement => {
                         const lat = parseFloat(announcement.latitude);
                         const lng = parseFloat(announcement.longitude);
@@ -79,68 +76,101 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                             const icon = window.L.divIcon({
                                 className: 'custom-marker',
                                 html: `<div style="
-                                    width: 25px; 
-                                    height: 25px; 
+                                    width: 32px; 
+                                    height: 32px; 
                                     border-radius: 50%; 
-                                    background-color: ${announcement.type === 'perdido' ? '#EF4444' : '#22C55E'};
+                                    background: ${announcement.type === 'perdido' ? '#dc2626' : '#16a34a'};
                                     border: 3px solid white;
-                                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
                                     display: flex;
                                     align-items: center;
                                     justify-content: center;
-                                    color: white;
-                                    font-weight: bold;
-                                    font-size: 10px;
+                                    font-size: 14px;
+                                    cursor: pointer;
+                                    transition: transform 0.2s;
                                 ">${announcement.type === 'perdido' ? '🔍' : '✓'}</div>`,
-                                iconSize: [25, 25],
-                                iconAnchor: [12.5, 12.5]
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 16]
                             });
 
                             const marker = window.L.marker([lat, lng], { icon }).addTo(map);
 
-                            // Usa a propriedade image_data para o popup
                             const imageHtml = announcement.image_data ? `
                                 <img src="${announcement.image_data}" 
-                                    style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />
+                                    style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;" />
                             ` : '';
 
                             const popupContent = `
-                                <div style="min-width: 200px; font-family: Arial, sans-serif;">
+                                <div style="min-width: 240px; font-family: system-ui, -apple-system, sans-serif;">
                                     <div style="
-                                        background: ${announcement.type === 'perdido' ? '#EF4444' : '#22C55E'}; 
+                                        background: linear-gradient(135deg, ${announcement.type === 'perdido' ? '#dc2626, #b91c1c' : '#16a34a, #15803d'}); 
                                         color: white; 
-                                        padding: 8px; 
-                                        margin: -9px -12px 8px -12px;
-                                        font-weight: bold;
+                                        padding: 12px 16px; 
+                                        margin: -10px -13px 12px -13px;
+                                        font-weight: 700;
+                                        font-size: 15px;
+                                        border-radius: 8px 8px 0 0;
                                     ">
-                                        ${announcement.pet_name} - ${announcement.type === 'perdido' ? 'Perdido' : 'Encontrado'}
+                                        ${announcement.pet_name} - ${announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
                                     </div>
                                     ${imageHtml}
-                                    <div style="margin-bottom: 4px;"><strong>Bairro:</strong> ${announcement.neighborhood || 'Não informado'}</div>
-                                    <div style="margin-bottom: 8px; color: #666; font-size: 12px;">
-                                        Publicado em: ${new Date(announcement.created_at).toLocaleDateString('pt-BR')}
+                                    <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: #7c3aed;">📍</span>
+                                        <span style="color: #374151; font-weight: 500;">${announcement.neighborhood || 'Não informado'}</span>
+                                    </div>
+                                    <div style="margin-bottom: 12px; color: #6b7280; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                        <span>📅</span>
+                                        <span>${new Date(announcement.created_at).toLocaleDateString('pt-BR')}</span>
                                     </div>
                                     <button 
                                         onclick="window.showAnnouncementDetail(${announcement.id})"
                                         style="
                                             width: 100%; 
-                                            padding: 8px; 
-                                            background: #4F46E5; 
+                                            padding: 12px; 
+                                            background: linear-gradient(135deg, #7c3aed, #6d28d9); 
                                             color: white; 
                                             border: none; 
-                                            border-radius: 4px; 
+                                            border-radius: 8px; 
                                             cursor: pointer;
-                                            font-weight: bold;
+                                            font-weight: 600;
+                                            font-size: 14px;
+                                            transition: all 0.2s;
+                                            box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
                                         "
+                                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(124, 58, 237, 0.4)'"
+                                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(124, 58, 237, 0.3)'"
                                     >
-                                        Ver Detalhes
+                                        Ver Detalhes Completos
                                     </button>
                                 </div>
                             `;
 
-                            marker.bindPopup(popupContent);
+                            marker.bindPopup(popupContent, {
+                                maxWidth: 280,
+                                className: 'custom-popup'
+                            });
                         }
                     });
+
+                    // Adiciona CSS customizado para os popups
+                    if (!document.querySelector('#custom-popup-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'custom-popup-style';
+                        style.textContent = `
+                            .custom-popup .leaflet-popup-content-wrapper {
+                                border-radius: 12px;
+                                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                                padding: 0;
+                            }
+                            .custom-popup .leaflet-popup-tip {
+                                display: none;
+                            }
+                            .custom-marker:hover > div {
+                                transform: scale(1.15);
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
 
                     setMapLoaded(true);
                 }
@@ -160,11 +190,16 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
 
     if (Platform.OS !== 'web') {
         return (
-            <View style={styles.unsupportedPlatform}>
-                <Text style={styles.unsupportedText}>
-                    Mapa disponível apenas na versão web. 
-                    Use o aplicativo mobile para funcionalidade completa.
-                </Text>
+            <View className="flex-1 justify-center items-center p-8 bg-gray-50">
+                <View className="bg-white rounded-2xl p-6 items-center shadow-lg max-w-md">
+                    <Text className="text-5xl mb-4">🗺️</Text>
+                    <Text className="text-lg font-semibold text-gray-800 mb-2 text-center">
+                        Mapa Interativo
+                    </Text>
+                    <Text className="text-sm text-gray-600 text-center">
+                        O mapa está disponível apenas na versão web. Utilize um navegador para visualizar a localização dos pets no mapa de Salvador.
+                    </Text>
+                </View>
             </View>
         );
     }
@@ -176,8 +211,8 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                 style={{ 
                     width: '100%', 
                     height: '100%', 
-                    minHeight: '400px',
-                    borderRadius: '8px'
+                    minHeight: '500px',
+                    borderRadius: '12px'
                 }} 
             />
             {!mapLoaded && (
@@ -187,28 +222,35 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
                     textAlign: 'center',
-                    color: '#666'
+                    background: 'white',
+                    padding: '24px 32px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                 }}>
-                    Carregando mapa...
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '4px solid #e5e7eb',
+                        borderTopColor: '#7c3aed',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto 12px'
+                    }}></div>
+                    <div style={{ color: '#6b7280', fontWeight: '500' }}>
+                        Carregando mapa...
+                    </div>
                 </div>
             )}
+            <style>{`
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
         </div>
     );
 };
 
 const Map: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
-    const formatDate = (dateString: string) => {
-        try {
-            return new Date(dateString).toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        } catch {
-            return 'Data inválida';
-        }
-    };
-
     const validAnnouncements = announcements.filter(a =>
         a.latitude && a.longitude &&
         !isNaN(parseFloat(a.latitude)) && !isNaN(parseFloat(a.longitude)) &&
@@ -219,32 +261,41 @@ const Map: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
     const foundPets = validAnnouncements.filter(a => a.type === 'encontrado');
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Mapa de Pets em Salvador</Text>
-                <View style={styles.badgeContainer}>
-                    <Text style={[styles.badge, styles.lostBadge]}>
-                        🔴 Perdidos: {lostPets.length}
-                    </Text>
-                    <Text style={[styles.badge, styles.foundBadge]}>
-                        🟢 Encontrados: {foundPets.length}
-                    </Text>
-                    <Text style={[styles.badge, styles.totalBadge]}>
-                        📍 Total: {validAnnouncements.length}
-                    </Text>
-                </View>
-            </View>
-
-            <View style={styles.mapWrapper}>
+        <View className="flex-1">
+            {/* Mapa em Tela Cheia */}
+            <View className="flex-1">
                 <LeafletMap announcements={validAnnouncements} onViewDetail={onViewDetail} />
                 
+                {/* Badges Flutuantes sobre o mapa */}
+                <View className="absolute top-4 left-4 right-4 flex-row flex-wrap gap-2 z-20">
+                    <View className="bg-white/95 backdrop-blur border border-red-200 px-3 py-2 rounded-full shadow-lg">
+                        <Text className="text-red-700 font-semibold text-xs">
+                            🔴 Perdidos: {lostPets.length}
+                        </Text>
+                    </View>
+                    <View className="bg-white/95 backdrop-blur border border-green-200 px-3 py-2 rounded-full shadow-lg">
+                        <Text className="text-green-700 font-semibold text-xs">
+                            🟢 Encontrados: {foundPets.length}
+                        </Text>
+                    </View>
+                    <View className="bg-white/95 backdrop-blur border border-purple-200 px-3 py-2 rounded-full shadow-lg">
+                        <Text className="text-purple-700 font-semibold text-xs">
+                            📍 Total: {validAnnouncements.length}
+                        </Text>
+                    </View>
+                </View>
+                
                 {validAnnouncements.length === 0 && (
-                    <View style={styles.noPetsOverlay}>
-                        <View style={styles.noPetsCard}>
-                            <Text style={styles.noPetsEmoji}>🗺️</Text>
-                            <Text style={styles.noPetsTitle}>Nenhum pet localizado</Text>
-                            <Text style={styles.noPetsText}>
-                                Quando houver anúncios com localização, eles aparecerão aqui no mapa.
+                    <View className="absolute inset-0 bg-white/95 justify-center items-center z-10">
+                        <View className="items-center p-8 max-w-md">
+                            <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
+                                <Text className="text-5xl">🗺️</Text>
+                            </View>
+                            <Text className="text-xl font-semibold text-gray-800 mb-3 text-center">
+                                Nenhum pet localizado
+                            </Text>
+                            <Text className="text-sm text-gray-600 text-center leading-6">
+                                Quando houver anúncios com localização GPS válida, os marcadores aparecerão automaticamente aqui no mapa de Salvador.
                             </Text>
                         </View>
                     </View>
@@ -253,108 +304,6 @@ const Map: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 8,
-        overflow: 'hidden',
-    },
-    header: {
-        backgroundColor: '#4F46E5',
-        padding: 24,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 16,
-    },
-    badgeContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    badge: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 9999,
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    lostBadge: {
-        backgroundColor: 'rgba(239, 68, 68, 0.2)',
-        color: 'white',
-        borderColor: 'rgba(239, 68, 68, 0.3)',
-        borderWidth: 1,
-    },
-    foundBadge: {
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-        color: 'white',
-        borderColor: 'rgba(34, 197, 94, 0.3)',
-        borderWidth: 1,
-    },
-    totalBadge: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: 'white',
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-        borderWidth: 1,
-    },
-    mapWrapper: {
-        flex: 1,
-        position: 'relative',
-        zIndex: 1,
-    },
-    noPetsOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        zIndex: 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    noPetsCard: {
-        alignItems: 'center',
-        padding: 32,
-    },
-    noPetsEmoji: {
-        fontSize: 48,
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    noPetsTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#4B5563',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    noPetsText: {
-        color: '#6B7280',
-        textAlign: 'center',
-    },
-    unsupportedPlatform: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32,
-        backgroundColor: '#F9FAFB',
-    },
-    unsupportedText: {
-        textAlign: 'center',
-        color: '#6B7280',
-        fontSize: 16,
-    },
-});
 
 // Declarações TypeScript para window
 declare global {

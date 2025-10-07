@@ -195,7 +195,7 @@ const DashboardScreen = () => {
             </View>
 
             {/* Main Content */}
-            <ScrollView className="flex-1 p-4">
+            <ScrollView className="flex-1 p-2">
                 {activeTab === 'todos' && (
                     <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
                         <View className="flex-row items-center gap-2 mb-4">
