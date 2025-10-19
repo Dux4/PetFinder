@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Stack, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../../services/api';
+import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../services/api';
 
 // Componentes já convertidos
-import AnnouncementList from '../../components/AnnouncementList';
-import AnnouncementDetail from '../../components/AnnouncementDetail';
-import AnnouncementForm from '../../components/AnnouncementForm';
-import Map from '../../components/ui/Map';
+import AnnouncementList from '../components/AnnouncementList';
+import AnnouncementDetail from '../components/AnnouncementDetail';
+import AnnouncementForm from '../components/AnnouncementForm';
+import Map from '../components/ui/Map';
 
 interface Announcement {
     id: number;

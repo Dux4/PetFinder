@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { register } from '../../services/api'; 
-import { useAuth } from '../../contexts/AuthContext';
+import { register } from '../services/api'; 
+import { useAuth } from '../contexts/AuthContext';
 
 type FormData = {
     name: string;

@@ -2,11 +2,15 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+// Para funcionar no emulador mobile ou no Expo Go, usar o IP da máquina local
+const API_BASE_URL = Platform.OS === 'android'
+  ? 'http://192.168.1.xxx:3000/api' // <-- Substitua por seu IP local
+  : 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
+
 
 // Interceptor para adicionar token
 api.interceptors.request.use(async (config) => {

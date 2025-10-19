@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { login as loginApi } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { login as loginApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FormData {
     email: string;
