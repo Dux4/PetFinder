@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { Stack, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../services/api';
 
@@ -31,7 +30,6 @@ interface Announcement {
 
 const DashboardScreen = () => {
     const { user, logout } = useAuth();
-    const router = useRouter();
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [foundPets, setFoundPets] = useState<Announcement[]>([]);
@@ -97,12 +95,9 @@ const DashboardScreen = () => {
         );
     }
     
-    // Dashboard principal
-    return (
-        <View className="flex-1 bg-gray-50">
-            <Stack.Screen options={{ headerShown: false }} />
-            
-            {/* Header com Gradiente */}
+    // Header Component (será reutilizado)
+    const Header = () => (
+        <>
             <LinearGradient
                 colors={['#7c3aed', '#6d28d9', '#5b21b6']}
                 start={{ x: 0, y: 0 }}
@@ -130,7 +125,6 @@ const DashboardScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Stats Cards no Header */}
                 <View className="flex-row gap-2 mt-6">
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
                         <Text className="text-white/80 text-xs mb-1">Ativos</Text>
@@ -147,7 +141,6 @@ const DashboardScreen = () => {
                 </View>
             </LinearGradient>
 
-            {/* Navigation Tabs com estilo moderno */}
             <View className="bg-white border-b border-gray-200 shadow-sm">
                 <ScrollView 
                     horizontal 
@@ -193,11 +186,18 @@ const DashboardScreen = () => {
                     ))}
                 </ScrollView>
             </View>
+        </>
+    );
+    
+    // Dashboard principal
+    return (
+        <View className="flex-1 bg-gray-50">
+            <Header />
 
-            {/* Main Content */}
-            <ScrollView className="flex-1 p-2">
+            {/* Main Content - Cada tab gerencia seu próprio scroll */}
+            <View className="flex-1">
                 {activeTab === 'todos' && (
-                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                    <View className="flex-1 p-4">
                         <View className="flex-row items-center gap-2 mb-4">
                             <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
                                 <Text className="text-xl">📋</Text>
@@ -223,7 +223,7 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'meus' && (
-                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                    <View className="flex-1 p-4">
                         <View className="flex-row items-center gap-2 mb-4">
                             <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
                                 <Text className="text-xl">👤</Text>
@@ -249,7 +249,7 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'encontrados' && (
-                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                    <View className="flex-1 p-4">
                         <View className="flex-row items-center gap-2 mb-4">
                             <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
                                 <Text className="text-xl">✅</Text>
@@ -275,8 +275,8 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'mapa' && (
-                    <View className="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
-                        <View className="p-4 border-b border-gray-100">
+                    <View className="flex-1">
+                        <View className="p-4 border-b border-gray-100 bg-white">
                             <View className="flex-row items-center gap-2">
                                 <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center">
                                     <Text className="text-xl">🗺️</Text>
@@ -296,7 +296,7 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'criar' && (
-                    <View className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+                    <ScrollView className="flex-1 p-4">
                         <View className="flex-row items-center gap-2 mb-4">
                             <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
                                 <Text className="text-xl">➕</Text>
@@ -311,9 +311,9 @@ const DashboardScreen = () => {
                             </View>
                         </View>
                         <AnnouncementForm onSuccess={loadData} />
-                    </View>
+                    </ScrollView>
                 )}
-            </ScrollView>
+            </View>
         </View>
     );
 };

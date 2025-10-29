@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 
 // Para funcionar no emulador mobile ou no Expo Go, usar o IP da máquina local
 const API_BASE_URL = Platform.OS === 'android'
-  ? 'http://192.168.1.xxx:3000/api' // <-- Substitua por seu IP local
+  ? 'http://192.168.1.244:3000/api' // <-- Substitua por seu IP local
   : 'http://localhost:3000/api';
 
 const api = axios.create({
