@@ -6,12 +6,14 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'petfinder',
   password: process.env.DB_PASSWORD || 'postgres',
   port: process.env.DB_PORT || 5432,
+  max: parseInt(process.env.DB_POOL_MAX || '10', 10),
+  idleTimeoutMillis: 30000,
 });
 
 const createTables = async () => {
   try {
-    console.log('🔧 Verificando tabelas...');
-    
+    if (process.env.NODE_ENV !== 'development') return; // Guard: only run in development
+
     // Criar tabela de usuários (se não existir)
     const createUsersTable = `
       CREATE TABLE IF NOT EXISTS users (
@@ -44,7 +46,7 @@ const createTables = async () => {
       );
     `;
 
-    // NOVA: Criar tabela de comentários
+    // Criar tabela de coment��rios
     const createCommentsTable = `
       CREATE TABLE IF NOT EXISTS comments (
         id SERIAL PRIMARY KEY,
@@ -55,37 +57,31 @@ const createTables = async () => {
       );
     `;
 
-    // Criar índices para otimizar buscas
+    // Índices úteis
     const createIndexes = `
       CREATE INDEX IF NOT EXISTS idx_comments_announcement_id ON comments(announcement_id);
       CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_announcements_status_created_at ON announcements(status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_announcements_user_id_created_at ON announcements(user_id, created_at DESC);
     `;
 
-    // Executar criação das tabelas
     await pool.query(createUsersTable);
-    console.log('✅ Tabela users OK');
-    
     await pool.query(createAnnouncementsTable);
-    console.log('✅ Tabela announcements OK');
-    
     await pool.query(createCommentsTable);
-    console.log('✅ Tabela comments OK');
-    
     await pool.query(createIndexes);
-    console.log('✅ Índices criados');
-    
+
     // Inserir usuário de teste apenas se não existir
     const insertTestUser = `
       INSERT INTO users (name, email, password, phone) 
       VALUES ('Admin Test', 'admin@test.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '(71) 99999-9999')
       ON CONFLICT (email) DO NOTHING;
     `;
-    
     await pool.query(insertTestUser);
-    console.log('✅ Setup completo - Database ready!');
-    
   } catch (err) {
-    console.error('❌ Erro ao criar tabelas:', err);
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.error('Erro ao criar tabelas (dev bootstrap):', err);
+    }
   }
 };
 
