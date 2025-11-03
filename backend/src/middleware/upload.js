@@ -1,8 +1,6 @@
 const multer = require('multer');
-const path = require('path');
 
 // Usamos memoryStorage para que o arquivo fique em memória (buffer)
-// e não seja salvo no disco.
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -17,11 +15,39 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
 
-module.exports = upload;
+// Middleware condicional que detecta o tipo de requisição
+const conditionalUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  
+  // Se for JSON, pula o Multer completamente
+  if (contentType.includes('application/json')) {
+    console.log('Middleware: Detectado JSON - pulando Multer');
+    return next();
+  }
+  
+  // Se for multipart/form-data, usa o Multer
+  if (contentType.includes('multipart/form-data')) {
+    console.log('Middleware: Detectado FormData - usando Multer');
+    const uploadSingle = upload.single('image');
+    return uploadSingle(req, res, (err) => {
+      if (err) {
+        console.error('Middleware: Erro no Multer:', err);
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  }
+  
+  // Para outros tipos, continua sem processar
+  console.log('Middleware: Content-Type desconhecido, continuando...');
+  next();
+};
+
+module.exports = conditionalUpload;
 
 //versao antiga
 

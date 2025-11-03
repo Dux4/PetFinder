@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TouchableOpacity, 
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Picker } from '@react-native-picker/picker';
 import { Feather } from '@expo/vector-icons';
 import { createAnnouncement, getNeighborhoods } from '../services/api';
 import LocationPickerModal from './modal/LocationPickerModal';
@@ -106,14 +104,21 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // Corrigido: usar array em vez de MediaTypeOptions
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
       if (!result.canceled && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
-        setImageMimeType(result.assets[0].mimeType || 'image/jpeg');
+        const selectedImage = result.assets[0];
+        setImageUri(selectedImage.uri);
+        setImageMimeType(selectedImage.mimeType || 'image/jpeg');
+        console.log('Imagem selecionada:', {
+          uri: selectedImage.uri,
+          mimeType: selectedImage.mimeType,
+          width: selectedImage.width,
+          height: selectedImage.height
+        });
       }
     } catch (error) {
       console.error('ERRO: Falha ao selecionar imagem:', error);
@@ -172,26 +177,16 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
         
         if (imageUri) {
           console.log('DEBUG: Preparando imagem para web como FormData');
-          const blob = await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.onload = function() {
-              resolve(xhr.response);
-            };
-            xhr.onerror = function() {
-              reject(new TypeError('Network request failed'));
-            };
-            xhr.responseType = 'blob';
-            xhr.open('GET', imageUri, true);
-            xhr.send(null);
-          });
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
           const filename = imageUri.split('/').pop() || 'photo.jpg';
-          webFormData.append('image', blob as any, filename);
+          webFormData.append('image', blob, filename);
           console.log('DEBUG: Imagem adicionada ao FormData para web.');
         }
         finalData = webFormData;
       } else {
         // Lógica para iOS/Android: usa Base64
-        const mobileData = {
+        const mobileData: any = {
           ...formData,
         };
         if (imageUri) {
@@ -199,7 +194,12 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
           const base64Image = await readImageAsBase64(imageUri);
           if (base64Image) {
             mobileData.image_data = base64Image;
-            mobileData.image_mime_type = imageMimeType;
+            mobileData.image_mime_type = imageMimeType || 'image/jpeg';
+            console.log('DEBUG: Imagem preparada:', {
+              mime_type: mobileData.image_mime_type,
+              base64_length: base64Image.length,
+              base64_preview: base64Image.substring(0, 100)
+            });
           } else {
             console.error('ERRO: Falha na conversão da imagem para Base64.');
             setMessage('Erro ao processar a imagem. Tente outra foto.');
@@ -207,10 +207,14 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             return;
           }
         }
+        console.log('DEBUG: Dados mobile completos:', {
+          ...mobileData,
+          image_data: mobileData.image_data ? `Base64(${mobileData.image_data.length} chars)` : null
+        });
         finalData = mobileData;
       }
 
-      console.log('DEBUG: Dados finais para envio:', finalData);
+      console.log('DEBUG: Dados finais para envio:', Platform.OS === 'web' ? 'FormData' : finalData);
 
       // Enviar para API
       const response = await createAnnouncement(finalData);
@@ -262,34 +266,42 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <View style={styles.outerContainer}>
+    <View className="flex-1">
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        className="flex-1 p-5"
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Criar Novo Anúncio</Text>
+        <View className="bg-white rounded-2xl p-6 shadow-lg">
+          <Text className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            Criar Novo Anúncio
+          </Text>
           
           {message && (
             <TouchableOpacity 
               onPress={clearMessage}
-              style={[
-                styles.messageBox, 
-                message.includes('sucesso') ? styles.successMessage : styles.errorMessage
-              ]}
+              className={`p-4 rounded-lg mb-5 flex-row justify-between items-center ${
+                message.includes('sucesso') 
+                  ? 'bg-green-100 border border-green-400' 
+                  : 'bg-red-100 border border-red-400'
+              }`}
             >
-              <Text style={message.includes('sucesso') ? styles.successText : styles.errorText}>
+              <Text className={`flex-1 text-sm ${
+                message.includes('sucesso') ? 'text-green-700' : 'text-red-700'
+              }`}>
                 {message}
               </Text>
-              <Text style={styles.messageClose}>✕</Text>
+              <Text className="text-gray-600 text-base font-bold ml-2">✕</Text>
             </TouchableOpacity>
           )}
 
-          <View style={styles.form}>
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Nome do Animal: *</Text>
+          <View className="gap-5">
+            <View className="gap-2">
+              <Text className="font-semibold text-gray-700 text-base">
+                Nome do Animal: *
+              </Text>
               <TextInput
-                style={styles.input}
+                className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800"
                 value={formData.pet_name}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, pet_name: text }))}
                 placeholder="Ex: Rex, Mimi, Buddy..."
@@ -298,24 +310,48 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
               />
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Tipo de Anúncio: *</Text>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={formData.type}
-                  onValueChange={(itemValue) => setFormData(prev => ({ ...prev, type: itemValue }))}
-                  style={styles.picker}
+            <View className="gap-2">
+              <Text className="font-semibold text-gray-700 text-base">
+                Tipo de Anúncio: *
+              </Text>
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={() => setFormData(prev => ({ ...prev, type: 'perdido' }))}
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    formData.type === 'perdido'
+                      ? 'bg-purple-600 border-purple-600'
+                      : 'bg-white border-gray-300'
+                  }`}
                 >
-                  <Picker.Item label="🔍 Animal Perdido" value="perdido" />
-                  <Picker.Item label="🏠 Animal Encontrado" value="encontrado" />
-                </Picker>
+                  <Text className={`text-center font-semibold ${
+                    formData.type === 'perdido' ? 'text-white' : 'text-gray-700'
+                  }`}>
+                    🔍 Perdido
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setFormData(prev => ({ ...prev, type: 'encontrado' }))}
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    formData.type === 'encontrado'
+                      ? 'bg-purple-600 border-purple-600'
+                      : 'bg-white border-gray-300'
+                  }`}
+                >
+                  <Text className={`text-center font-semibold ${
+                    formData.type === 'encontrado' ? 'text-white' : 'text-gray-700'
+                  }`}>
+                    🏠 Encontrado
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Descrição: *</Text>
+            <View className="gap-2">
+              <Text className="font-semibold text-gray-700 text-base">
+                Descrição: *
+              </Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800 h-32"
                 value={formData.description}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
                 multiline
@@ -326,19 +362,28 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
               />
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Foto do Animal:</Text>
-              <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+            <View className="gap-2">
+              <Text className="font-semibold text-gray-700 text-base">
+                Foto do Animal:
+              </Text>
+              <TouchableOpacity 
+                className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg gap-3"
+                onPress={pickImage}
+              >
                 <Feather name="upload" size={24} color="#4F46E5" />
-                <Text style={styles.imagePickerText}>
+                <Text className="text-purple-600 font-semibold text-base">
                   {imageUri ? 'Alterar foto' : 'Escolher foto'}
                 </Text>
               </TouchableOpacity>
               {imageUri && (
-                <View style={styles.imagePreview}>
-                  <RNImage source={{ uri: imageUri }} style={styles.previewImage} />
+                <View className="mt-3 items-center relative">
+                  <RNImage 
+                    source={{ uri: imageUri }} 
+                    className="w-52 h-40 rounded-lg"
+                    resizeMode="cover"
+                  />
                   <TouchableOpacity 
-                    style={styles.removeImageButton}
+                    className="absolute -top-2 right-24 bg-red-500 rounded-full p-1"
                     onPress={() => {
                       setImageUri(null);
                       setImageMimeType(null);
@@ -351,13 +396,17 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             </View>
 
             {/* Seção de Localização */}
-            <View style={styles.locationSection}>
-              <Text style={styles.locationTitle}>📍 Localização</Text>
+            <View className="bg-gray-50 p-5 rounded-2xl border-2 border-dashed border-gray-300">
+              <Text className="font-semibold text-gray-700 text-lg mb-4">
+                📍 Localização
+              </Text>
               
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Bairro: *</Text>
+              <View className="gap-2 mb-4">
+                <Text className="font-semibold text-gray-700 text-base">
+                  Bairro: *
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800 bg-white"
                   value={formData.neighborhood}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, neighborhood: text }))}
                   placeholder="Ex: Barra, Ondina, Rio Vermelho..."
@@ -365,42 +414,39 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 />
               </View>
               
-              <View style={styles.locationPickerRow}>
-                <View style={styles.locationStatus}>
-                  {selectedLocation ? (
-                    <View style={styles.locationSelected}>
-                      <View style={styles.locationSelectedHeader}>
-                        <Feather name="check-circle" size={20} color="#10B981" />
-                        <Text style={styles.locationSelectedText}>Localização selecionada</Text>
-                      </View>
-                      <Text style={styles.locationSelectedCoords}>
-                        Coordenadas: {selectedLocation[0].toFixed(4)}, {selectedLocation[1].toFixed(4)}
+              <View className="gap-4">
+                {selectedLocation ? (
+                  <View className="bg-green-100 border border-green-400 rounded-lg p-4 gap-2">
+                    <View className="flex-row items-center gap-2">
+                      <Feather name="check-circle" size={20} color="#10B981" />
+                      <Text className="font-medium text-green-700 text-base">
+                        Localização selecionada
                       </Text>
                     </View>
-                  ) : (
-                    <View style={styles.locationNotSelected}>
-                      <View style={styles.locationNotSelectedHeader}>
-                        <Feather name="alert-triangle" size={20} color="#F59E0B" />
-                        <Text style={styles.locationNotSelectedText}>Localização obrigatória</Text>
-                      </View>
-                      <Text style={styles.locationNotSelectedSubtext}>
-                        Clique no botão abaixo para escolher no mapa.
+                    <Text className="text-xs text-green-600">
+                      Coordenadas: {selectedLocation[0].toFixed(4)}, {selectedLocation[1].toFixed(4)}
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 gap-2">
+                    <View className="flex-row items-center gap-2">
+                      <Feather name="alert-triangle" size={20} color="#F59E0B" />
+                      <Text className="font-medium text-yellow-700 text-base">
+                        Localização obrigatória
                       </Text>
                     </View>
-                  )}
-                </View>
+                    <Text className="text-xs text-yellow-600">
+                      Clique no botão abaixo para escolher no mapa.
+                    </Text>
+                  </View>
+                )}
                 
                 <TouchableOpacity
                   onPress={() => setShowLocationModal(true)}
-                  style={styles.locationButton}
+                  className="bg-purple-600 p-4 rounded-lg flex-row items-center justify-center gap-2"
                 >
-                  <Feather 
-                    name="map-pin" 
-                    size={18} 
-                    color="#fff" 
-                    style={styles.locationButtonIcon} 
-                  />
-                  <Text style={styles.locationButtonText}>
+                  <Feather name="map-pin" size={18} color="#fff" />
+                  <Text className="text-white font-semibold text-base">
                     {selectedLocation ? 'Alterar Local' : 'Escolher no Mapa'}
                   </Text>
                 </TouchableOpacity>
@@ -410,17 +456,23 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             <TouchableOpacity
               onPress={handleSubmit}
               disabled={loading}
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              className={`w-full bg-purple-600 py-4 px-6 rounded-lg items-center justify-center mt-2 ${
+                loading ? 'opacity-60' : ''
+              }`}
             >
               {loading ? (
-                <View style={styles.submitButtonLoading}>
+                <View className="flex-row items-center gap-2">
                   <ActivityIndicator color="#fff" size="small" />
-                  <Text style={styles.submitButtonText}>Criando...</Text>
+                  <Text className="text-white font-semibold text-base">
+                    Criando...
+                  </Text>
                 </View>
               ) : (
-                <View style={styles.submitButtonContent}>
-                  <Feather name="send" size={18} color="#fff" style={styles.submitButtonIcon} />
-                  <Text style={styles.submitButtonText}>Criar Anúncio</Text>
+                <View className="flex-row items-center gap-2">
+                  <Feather name="send" size={18} color="#fff" />
+                  <Text className="text-white font-semibold text-base">
+                    Criar Anúncio
+                  </Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -437,248 +489,5 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  outerContainer: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  messageBox: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  successMessage: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#34D399',
-    borderWidth: 1,
-  },
-  errorMessage: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#F87171',
-    borderWidth: 1,
-  },
-  successText: {
-    color: '#16A34A',
-    flex: 1,
-    fontSize: 14,
-  },
-  errorText: {
-    color: '#DC2626',
-    flex: 1,
-    fontSize: 14,
-  },
-  messageClose: {
-    color: '#6B7280',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  form: {
-    gap: 20,
-  },
-  formGroup: {
-    flexDirection: 'column',
-    gap: 8,
-  },
-  label: {
-    fontWeight: '600',
-    color: '#4B5563',
-    fontSize: 16,
-  },
-  input: {
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
-  },
-  pickerWrapper: {
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-  },
-  imagePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    borderStyle: 'dashed',
-    gap: 12,
-  },
-  imagePickerText: {
-    color: '#4F46E5',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  imagePreview: {
-    marginTop: 12,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  previewImage: {
-    width: 200,
-    height: 150,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: -8,
-    right: '30%',
-    backgroundColor: '#EF4444',
-    borderRadius: 12,
-    padding: 4,
-  },
-  locationSection: {
-    backgroundColor: '#F9FAFB',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    borderStyle: 'dashed',
-  },
-  locationTitle: {
-    fontWeight: '600',
-    color: '#4B5563',
-    fontSize: 18,
-    marginBottom: 16,
-  },
-  locationPickerRow: {
-    flexDirection: 'column',
-    gap: 16,
-  },
-  locationStatus: {
-    flex: 1,
-  },
-  locationSelected: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#34D399',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    gap: 8,
-  },
-  locationSelectedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  locationSelectedText: {
-    fontWeight: '500',
-    color: '#10B981',
-    fontSize: 16,
-  },
-  locationSelectedCoords: {
-    fontSize: 12,
-    color: '#059669',
-  },
-  locationNotSelected: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FEF3C7',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    gap: 8,
-  },
-  locationNotSelectedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  locationNotSelectedText: {
-    fontWeight: '500',
-    color: '#F59E0B',
-    fontSize: 16,
-  },
-  locationNotSelectedSubtext: {
-    fontSize: 12,
-    color: '#D97706',
-  },
-  locationButton: {
-    backgroundColor: '#4F46E5',
-    padding: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  locationButtonIcon: {
-    marginRight: 4,
-  },
-  locationButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  submitButton: {
-    width: '100%',
-    backgroundColor: '#4F46E5',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  submitButtonLoading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  submitButtonIcon: {
-    marginRight: 4,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-});
 
 export default AnnouncementForm;

@@ -3,36 +3,101 @@ const Announcement = require('../models/Announcement');
 class AnnouncementController {
   static async create(req, res) {
     try {
+      // TESTE: Log completo do body para debug
+      console.log('=== BODY COMPLETO ===');
+      console.log('Type of req.body:', typeof req.body);
+      console.log('Is array:', Array.isArray(req.body));
+      console.log('Keys:', Object.keys(req.body));
+      console.log('=====================');
+      
       const {
         pet_name,
         description,
         type,
         neighborhood,
         latitude,
-        longitude
+        longitude,
+        image_data, // Base64 string (mobile)
+        image_mime_type // MIME type (mobile)
       } = req.body;
 
-      console.log('create - Dados recebidos:', req.body);
+      console.log('=== CREATE ANNOUNCEMENT DEBUG ===');
+      console.log('Content-Type:', req.headers['content-type']);
+      console.log('Platform:', req.file ? 'WEB (FormData)' : 'MOBILE (JSON Base64)');
+      console.log('Has req.file:', !!req.file);
+      console.log('Has image_data in body:', !!image_data);
+      console.log('image_data length:', image_data ? image_data.length : 0);
+      console.log('image_mime_type:', image_mime_type);
+      console.log('req.body keys:', Object.keys(req.body));
+      console.log('Dados do body:', {
+        pet_name,
+        type,
+        neighborhood,
+        latitude,
+        longitude,
+        description: description?.substring(0, 50)
+      });
+      console.log('================================');
 
       if (!pet_name || !description || !type || !neighborhood) {
         return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
       }
 
-      // NOVO: Ler os dados do arquivo em buffer e o tipo MIME
-      const imageData = req.file ? req.file.buffer : null;
-      const imageMimeType = req.file ? req.file.mimetype : null;
+      let imageBuffer = null;
+      let mimeType = null;
+
+      // Se veio um arquivo (Web - FormData)
+      if (req.file) {
+        console.log('create - Usando imagem do FormData (Web)');
+        imageBuffer = req.file.buffer;
+        mimeType = req.file.mimetype;
+      } 
+      // Se veio Base64 (Mobile - JSON)
+      else if (image_data && image_mime_type) {
+        console.log('create - Usando imagem Base64 (Mobile)');
+        console.log('create - Base64 recebido:', {
+          length: image_data.length,
+          mime: image_mime_type,
+          starts_with: image_data.substring(0, 50)
+        });
+        
+        try {
+          // Converte Base64 string para Buffer
+          imageBuffer = Buffer.from(image_data, 'base64');
+          mimeType = image_mime_type;
+          console.log(`create - Buffer criado com sucesso. Tamanho: ${imageBuffer.length} bytes`);
+          
+          // Validar se o buffer foi criado corretamente
+          if (!imageBuffer || imageBuffer.length === 0) {
+            throw new Error('Buffer vazio após conversão');
+          }
+        } catch (error) {
+          console.error('create - Erro ao converter Base64 para Buffer:', error);
+          return res.status(400).json({ 
+            error: 'Imagem inválida. Verifique o formato.',
+            details: error.message 
+          });
+        }
+      } else {
+        console.log('create - Nenhuma imagem fornecida (ok, campo opcional)');
+      }
 
       const announcementData = {
         pet_name,
         description,
         type,
         user_id: req.user.id,
-        image_data: imageData, // Passa o buffer para o modelo
-        image_mime_type: imageMimeType, // Passa o tipo MIME
+        image_data: imageBuffer,
+        image_mime_type: mimeType,
         neighborhood,
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null
       };
+
+      console.log('create - Criando anúncio:', {
+        ...announcementData,
+        image_data: imageBuffer ? `Buffer(${imageBuffer.length} bytes)` : null
+      });
 
       const announcement = await Announcement.create(announcementData);
 
@@ -79,13 +144,8 @@ class AnnouncementController {
 
       console.log('updateStatus - Dados recebidos:', {
         id,
-        idType: typeof id,
         status,
-        statusType: typeof status,
-        userId: req.user.id,
-        userIdType: typeof req.user.id,
-        body: req.body,
-        params: req.params
+        userId: req.user.id
       });
 
       // Validações

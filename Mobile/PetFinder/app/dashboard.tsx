@@ -73,6 +73,13 @@ const DashboardScreen = () => {
         setSelectedAnnouncement(null);
     };
 
+    // Função para ser chamada após sucesso na criação do anúncio
+    const handleAnnouncementSuccess = async () => {
+        await loadData(); // Recarrega os dados
+        setActiveTab('todos'); // Muda para a aba "todos"
+        Alert.alert('Sucesso', 'Anúncio criado com sucesso!');
+    };
+
     const tabs = [
         { id: 'todos', label: 'Todos', icon: '📋', count: announcements.length },
         { id: 'meus', label: 'Meus', icon: '👤', count: myAnnouncements.length },
@@ -296,22 +303,27 @@ const DashboardScreen = () => {
                 )}
                 
                 {activeTab === 'criar' && (
-                    <ScrollView className="flex-1 p-4">
-                        <View className="flex-row items-center gap-2 mb-4">
-                            <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                                <Text className="text-xl">➕</Text>
+                    <View className="flex-1">
+                        <ScrollView 
+                            className="flex-1 p-4"
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">➕</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Novo Anúncio
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Compartilhe com a comunidade
+                                    </Text>
+                                </View>
                             </View>
-                            <View>
-                                <Text className="text-lg font-bold text-gray-800">
-                                    Novo Anúncio
-                                </Text>
-                                <Text className="text-sm text-gray-500">
-                                    Compartilhe com a comunidade
-                                </Text>
-                            </View>
-                        </View>
-                        <AnnouncementForm onSuccess={loadData} />
-                    </ScrollView>
+                            <AnnouncementForm onSuccess={handleAnnouncementSuccess} />
+                        </ScrollView>
+                    </View>
                 )}
             </View>
         </View>
