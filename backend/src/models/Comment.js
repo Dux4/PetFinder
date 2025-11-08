@@ -54,7 +54,6 @@ class Comment {
     }
   }
 
-  // Método para buscar comentário com dados do usuário
   static async findByIdWithUser(commentId) {
     const query = `
       SELECT 

@@ -2,9 +2,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// Para funcionar no emulador mobile ou no Expo Go, usar o IP da máquina local
 const API_BASE_URL = Platform.OS === 'android'
-  ? 'http://192.168.1.244:3000/api' // <-- Substitua por seu IP local
+  ? process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.244:3000/api'
   : 'http://localhost:3000/api';
 
 const api = axios.create({
@@ -12,7 +11,6 @@ const api = axios.create({
 });
 
 
-// Interceptor para adicionar token
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('pet-finder-token');
@@ -20,12 +18,11 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (error) {
-    console.error("Erro ao obter token do AsyncStorage:", error);
+    console.error("Erro ao obter token:", error);
   }
   return config;
 });
 
-// Interceptor para tratar erros globalmente
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -33,9 +30,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// --- Funções de API ---
-// Auth
 export const login = async (credentials) => {
   const response = await api.post('/auth/login', credentials);
   return response.data;
@@ -51,9 +45,7 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
-// Anúncios - Agora suporta FormData para Web
 export const createAnnouncement = async (formData) => {
-  // Se for uma instância de FormData, configuramos o header para multipart
   const headers = Platform.OS === 'web'
     ? { 'Content-Type': 'multipart/form-data' }
     : {};

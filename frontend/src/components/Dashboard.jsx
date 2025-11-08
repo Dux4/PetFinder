@@ -86,7 +86,6 @@ const Dashboard = () => {
     { id: 'encontrados', label: 'Pets Encontrados', icon: '✅', count: foundPets.length },
   ];
 
-  // Loading state para detalhes
   if (loadingDetail) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -98,7 +97,6 @@ const Dashboard = () => {
     );
   }
 
-  // Mostrar detalhes do anúncio
   if (selectedAnnouncement) {
     return (
       <AnnouncementDetail 
@@ -114,7 +112,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="gradient-primary shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -141,7 +138,6 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 overflow-x-auto py-4">
@@ -172,7 +168,6 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'todos' && (
           <AnnouncementList 

@@ -6,13 +6,8 @@ class CommentController {
       const { announcement_id } = req.params;
       const { content } = req.body;
 
-      // Validações
       if (!content || content.trim().length === 0) {
         return res.status(400).json({ error: 'Conteúdo do comentário é obrigatório' });
-      }
-
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
       const commentData = {
@@ -21,15 +16,8 @@ class CommentController {
         content: content.trim()
       };
 
-      console.log('Criando comentário:', commentData);
-
-      // Criar comentário
       const newComment = await Comment.create(commentData);
-      console.log('Comentário criado:', newComment);
-      
-      // Buscar o comentário com dados do usuário
       const commentWithUser = await Comment.findByIdWithUser(newComment.id);
-      console.log('Comentário com usuário:', commentWithUser);
 
       if (!commentWithUser) {
         return res.status(500).json({ error: 'Erro ao recuperar comentário criado' });
@@ -56,10 +44,7 @@ class CommentController {
         return res.status(400).json({ error: 'ID do anúncio inválido' });
       }
 
-      console.log('Buscando comentários para anúncio:', announcement_id);
-      
       const comments = await Comment.findByAnnouncementId(parseInt(announcement_id));
-      console.log('Comentários encontrados:', comments.length);
       
       res.json(comments);
     } catch (error) {

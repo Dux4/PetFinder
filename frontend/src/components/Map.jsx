@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 
-// Fix for default markers
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -10,7 +9,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom icon for lost pets
 const lostIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -20,7 +18,6 @@ const lostIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Custom icon for found pets
 const foundIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -31,7 +28,7 @@ const foundIcon = new L.Icon({
 });
 
 const Map = ({ announcements }) => {
-  const [center] = useState([-12.9714, -38.5014]); // Centro de Salvador
+  const [center] = useState([-12.9714, -38.5014]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -41,7 +38,6 @@ const Map = ({ announcements }) => {
     });
   };
 
-  // Filtrar anúncios com coordenadas válidas
   const validAnnouncements = announcements.filter(a => 
     a.latitude && a.longitude && 
     !isNaN(parseFloat(a.latitude)) && !isNaN(parseFloat(a.longitude)) &&
@@ -110,10 +106,10 @@ const Map = ({ announcements }) => {
                     </span>
                   </div>
                   
-                  {announcement.image_url && (
+                  {announcement.image_data && (
                     <div className="w-full h-40 overflow-hidden bg-gray-100">
                       <img
-                        src={`http://localhost:3000${announcement.image_url}`}
+                        src={announcement.image_data}
                         alt={announcement.pet_name}
                         loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"

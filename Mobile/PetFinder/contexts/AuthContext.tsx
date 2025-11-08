@@ -19,24 +19,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  console.log('🎯 useAuth foi chamado');
   const context = useContext(AuthContext);
   if (!context) {
-    console.error('❌ AuthContext é undefined - AuthProvider não está acima na árvore!');
-    console.trace('Stack trace:'); // Mostra de onde veio a chamada
     throw new Error('useAuth deve ser usado dentro de AuthProvider');
   }
-  console.log('✅ useAuth funcionou, contexto encontrado');
   return context;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  console.log('🔥 AuthProvider montando...');
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 AuthProvider useEffect executando');
     checkAuth();
   }, []);
 
@@ -52,7 +46,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.removeItem('pet-finder-token');
     } finally {
       setLoading(false);
-      console.log('✅ AuthProvider loading completo');
     }
   };
 
@@ -73,8 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Erro ao fazer logout:", error);
     }
   };
-
-  console.log('🔥 AuthProvider renderizando, loading:', loading);
 
   return (
     <AuthContext.Provider value={{

@@ -84,7 +84,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="gradient-primary">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <button
@@ -116,15 +115,13 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="grid md:grid-cols-2 gap-8 p-8">
-            {/* Image */}
             <div className="space-y-4">
-              {announcement.image_url ? (
+              {announcement.image_data ? (
                 <img
-                  src={`http://localhost:3000${announcement.image_url}`}
+                  src={announcement.image_data}
                   alt={announcement.pet_name}
                   className="w-full h-80 object-cover rounded-lg shadow-md"
                 />
@@ -137,7 +134,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 </div>
               )}
 
-              {/* Location Info */}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
                   <span className="mr-2">📍</span>
@@ -152,7 +148,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
               </div>
             </div>
 
-            {/* Details */}
             <div className="space-y-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Informações do Pet</h2>
@@ -161,7 +156,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 </div>
               </div>
 
-              {/* Contact Info */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
                   <span className="mr-2">📞</span>
@@ -174,7 +168,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 </div>
               </div>
 
-              {/* Dates */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
                   <span className="mr-2">📅</span>
@@ -190,7 +183,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 </div>
               </div>
 
-              {/* Owner Actions */}
               {isOwner && announcement.status === 'ativo' && (
                 <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg">
                   <h3 className="font-semibold text-gray-800 mb-4">Gerenciar Anúncio</h3>
@@ -209,7 +201,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
             </div>
           </div>
 
-          {/* Comments Section */}
           <div className="border-t border-gray-200 p-8">
             <div className="max-w-3xl">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
@@ -217,7 +208,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 Comentários ({comments.length})
               </h3>
 
-              {/* Comment Form */}
               {user ? (
                 <form onSubmit={handleCommentSubmit} className="mb-8">
                   <div className="flex space-x-4">
@@ -255,7 +245,6 @@ const AnnouncementDetail = ({ announcement, onBack, onStatusUpdate }) => {
                 </div>
               )}
 
-              {/* Comments List */}
               <div className="space-y-4">
                 {loadingComments ? (
                   <div className="text-center py-8">
