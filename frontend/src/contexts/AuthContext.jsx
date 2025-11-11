@@ -40,6 +40,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('pet-finder-token');
     setUser(null);
+    window.location.reload();
   };
 
   return (

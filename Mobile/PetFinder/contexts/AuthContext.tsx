@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentUser } from '../services/api';
+import { router } from 'expo-router';
 
 interface UserData {
   id: number;
@@ -62,6 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await AsyncStorage.removeItem('pet-finder-token');
       setUser(null);
+      router.replace('/login');
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
