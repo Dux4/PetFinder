@@ -28,6 +28,8 @@ interface Announcement {
     user_id: number;
 }
 
+const ITEMS_PER_PAGE = 10; // Número de itens por página
+
 const DashboardScreen = () => {
     const { user, logout } = useAuth();
 
@@ -38,6 +40,11 @@ const DashboardScreen = () => {
     const [activeTab, setActiveTab] = useState('todos');
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
+
+    // Estados de paginação
+    const [currentPageTodos, setCurrentPageTodos] = useState(1);
+    const [currentPageMeus, setCurrentPageMeus] = useState(1);
+    const [currentPageEncontrados, setCurrentPageEncontrados] = useState(1);
 
     useEffect(() => {
         loadData();
@@ -73,11 +80,22 @@ const DashboardScreen = () => {
         setSelectedAnnouncement(null);
     };
 
-    // Função para ser chamada após sucesso na criação do anúncio
     const handleAnnouncementSuccess = async () => {
-        await loadData(); // Recarrega os dados
-        setActiveTab('todos'); // Muda para a aba "todos"
+        await loadData();
+        setActiveTab('todos');
+        setCurrentPageTodos(1); // Resetar para primeira página
         Alert.alert('Sucesso', 'Anúncio criado com sucesso!');
+    };
+
+    // Funções de paginação
+    const getPaginatedData = (data: Announcement[], currentPage: number) => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return data.slice(startIndex, endIndex);
+    };
+
+    const getTotalPages = (data: Announcement[]) => {
+        return Math.ceil(data.length / ITEMS_PER_PAGE);
     };
 
     const tabs = [
@@ -88,7 +106,6 @@ const DashboardScreen = () => {
         { id: 'encontrados', label: 'Encontrados', icon: '✅', count: foundPets.length },
     ];
     
-    // Mostra o componente de detalhes se um anúncio for selecionado
     if (selectedAnnouncement) {
         return (
             <AnnouncementDetail
@@ -102,7 +119,64 @@ const DashboardScreen = () => {
         );
     }
     
-    // Header Component (será reutilizado)
+    // Componente de Paginação (será incluído dentro do ScrollView)
+    const PaginationControls = ({ 
+        currentPage, 
+        totalPages, 
+        onPageChange 
+    }: { 
+        currentPage: number; 
+        totalPages: number; 
+        onPageChange: (page: number) => void;
+    }) => {
+        if (totalPages <= 1) return null;
+
+        return (
+            <View className="flex-row items-center justify-center gap-3 py-4 px-4 mt-4">
+                <TouchableOpacity
+                    onPress={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`flex-row items-center gap-2 px-4 py-3 rounded-lg ${
+                        currentPage === 1 
+                            ? 'bg-gray-100' 
+                            : 'bg-purple-700'
+                    }`}
+                >
+                    <Text className={`text-lg ${currentPage === 1 ? 'text-gray-400' : 'text-white'}`}>
+                        ←
+                    </Text>
+                    <Text className={`font-semibold ${currentPage === 1 ? 'text-gray-400' : 'text-white'}`}>
+                        Anterior
+                    </Text>
+                </TouchableOpacity>
+
+                <View className="bg-purple-100 px-4 py-3 rounded-lg min-w-[80px]">
+                    <Text className="text-center font-bold text-purple-900">
+                        {currentPage} / {totalPages}
+                    </Text>
+                </View>
+
+                <TouchableOpacity
+                    onPress={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`flex-row items-center gap-2 px-4 py-3 rounded-lg ${
+                        currentPage === totalPages 
+                            ? 'bg-gray-100' 
+                            : 'bg-purple-700'
+                    }`}
+                >
+                    <Text className={`font-semibold ${currentPage === totalPages ? 'text-gray-400' : 'text-white'}`}>
+                        Próxima
+                    </Text>
+                    <Text className={`text-lg ${currentPage === totalPages ? 'text-gray-400' : 'text-white'}`}>
+                        →
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    // Header Component
     const Header = () => (
         <>
             <LinearGradient
@@ -201,82 +275,108 @@ const DashboardScreen = () => {
         <View className="flex-1 bg-gray-50">
             <Header />
 
-            {/* Main Content - Cada tab gerencia seu próprio scroll */}
             <View className="flex-1">
                 {activeTab === 'todos' && (
-                    <View className="flex-1 p-4">
-                        <View className="flex-row items-center gap-2 mb-4">
-                            <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                                <Text className="text-xl">📋</Text>
-                            </View>
-                            <View>
-                                <Text className="text-lg font-bold text-gray-800">
-                                    Todos os Anúncios
-                                </Text>
-                                <Text className="text-sm text-gray-500">
-                                    Pets perdidos e encontrados na comunidade
-                                </Text>
+                    <View className="flex-1">
+                        <View className="p-4">
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">📋</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Todos os Anúncios
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Pets perdidos e encontrados na comunidade
+                                    </Text>
+                                </View>
                             </View>
                         </View>
                         <AnnouncementList 
-                            announcements={announcements} 
+                            announcements={getPaginatedData(announcements, currentPageTodos)} 
                             loading={loading}
                             onRefresh={loadData}
                             title=""
                             showOwnerActions={false}
                             onViewDetail={handleViewDetail}
+                            ListFooterComponent={
+                                <PaginationControls
+                                    currentPage={currentPageTodos}
+                                    totalPages={getTotalPages(announcements)}
+                                    onPageChange={setCurrentPageTodos}
+                                />
+                            }
                         />
                     </View>
                 )}
                 
                 {activeTab === 'meus' && (
-                    <View className="flex-1 p-4">
-                        <View className="flex-row items-center gap-2 mb-4">
-                            <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
-                                <Text className="text-xl">👤</Text>
-                            </View>
-                            <View>
-                                <Text className="text-lg font-bold text-gray-800">
-                                    Meus Anúncios
-                                </Text>
-                                <Text className="text-sm text-gray-500">
-                                    Gerencie suas publicações
-                                </Text>
+                    <View className="flex-1">
+                        <View className="p-4">
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">👤</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Meus Anúncios
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Gerencie suas publicações
+                                    </Text>
+                                </View>
                             </View>
                         </View>
                         <AnnouncementList 
-                            announcements={myAnnouncements} 
+                            announcements={getPaginatedData(myAnnouncements, currentPageMeus)} 
                             loading={loading}
                             onRefresh={loadData}
                             title=""
                             showOwnerActions={true}
                             onViewDetail={handleViewDetail}
+                            ListFooterComponent={
+                                <PaginationControls
+                                    currentPage={currentPageMeus}
+                                    totalPages={getTotalPages(myAnnouncements)}
+                                    onPageChange={setCurrentPageMeus}
+                                />
+                            }
                         />
                     </View>
                 )}
                 
                 {activeTab === 'encontrados' && (
-                    <View className="flex-1 p-4">
-                        <View className="flex-row items-center gap-2 mb-4">
-                            <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
-                                <Text className="text-xl">✅</Text>
-                            </View>
-                            <View>
-                                <Text className="text-lg font-bold text-gray-800">
-                                    Pets Encontrados
-                                </Text>
-                                <Text className="text-sm text-gray-500">
-                                    Histórias de sucesso da comunidade
-                                </Text>
+                    <View className="flex-1">
+                        <View className="p-4">
+                            <View className="flex-row items-center gap-2 mb-4">
+                                <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">✅</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Pets Encontrados
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Histórias de sucesso da comunidade
+                                    </Text>
+                                </View>
                             </View>
                         </View>
                         <AnnouncementList 
-                            announcements={foundPets} 
+                            announcements={getPaginatedData(foundPets, currentPageEncontrados)} 
                             loading={loading}
                             onRefresh={loadData}
                             title=""
                             showOwnerActions={false}
                             onViewDetail={handleViewDetail}
+                            ListFooterComponent={
+                                <PaginationControls
+                                    currentPage={currentPageEncontrados}
+                                    totalPages={getTotalPages(foundPets)}
+                                    onPageChange={setCurrentPageEncontrados}
+                                />
+                            }
                         />
                     </View>
                 )}

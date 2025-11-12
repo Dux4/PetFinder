@@ -35,6 +35,7 @@ interface AnnouncementListProps {
     title: string;
     showOwnerActions?: boolean;
     onViewDetail?: (announcement: Announcement) => void;
+    ListFooterComponent?: React.ReactElement | null;
 }
 
 const AnnouncementList: React.FC<AnnouncementListProps> = ({
@@ -44,6 +45,7 @@ const AnnouncementList: React.FC<AnnouncementListProps> = ({
     title,
     showOwnerActions,
     onViewDetail,
+    ListFooterComponent,
 }) => {
     const renderItem = ({ item }: { item: Announcement }) => (
         <AnnouncementCard
@@ -116,6 +118,7 @@ const AnnouncementList: React.FC<AnnouncementListProps> = ({
                         />
                     }
                     showsVerticalScrollIndicator={false}
+                    ListFooterComponent={ListFooterComponent}
                 />
             )}
         </View>
