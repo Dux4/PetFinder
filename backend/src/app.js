@@ -27,6 +27,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.post('/api/auth/register', AuthController.register);
 app.post('/api/auth/login', AuthController.login);
 app.get('/api/auth/me', authenticateToken, AuthController.me);
+app.put('/api/auth/profile', authenticateToken, AuthController.updateProfile);
 
 app.post('/api/announcements', authenticateToken, upload, AnnouncementController.create);
 app.get('/api/announcements', AnnouncementController.getAll);

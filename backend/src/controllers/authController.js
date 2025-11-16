@@ -84,6 +84,41 @@ class AuthController {
       phone: req.user.phone
     });
   }
+
+  static async updateProfile(req, res) {
+    try {
+      const userId = req.user.id;
+      const { name, email, phone, password } = req.body;
+
+      // Verificar se o email já está em uso por outro usuário
+      if (email) {
+        const existingUser = await User.findByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ error: 'Email já cadastrado' });
+        }
+      }
+
+      // Atualizar o perfil
+      const updatedUser = await User.update(userId, { name, email, phone, password });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      res.json({
+        message: 'Perfil atualizado com sucesso',
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
 }
 
 module.exports = AuthController;

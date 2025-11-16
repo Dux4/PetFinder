@@ -45,6 +45,11 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
+export const updateProfile = async (userData) => {
+  const response = await api.put('/auth/profile', userData);
+  return response.data;
+};
+
 export const createAnnouncement = async (formData) => {
   const headers = Platform.OS === 'web'
     ? { 'Content-Type': 'multipart/form-data' }

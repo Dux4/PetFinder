@@ -33,7 +33,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = (token, userData) => {
-    localStorage.setItem('pet-finder-token', token);
+    if (token) {
+      localStorage.setItem('pet-finder-token', token);
+    }
+    setUser(userData);
+  };
+
+  const updateUser = (userData) => {
     setUser(userData);
   };
 
@@ -49,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       logout,
+      updateUser,
       isAuthenticated: !!user
     }}>
       {children}

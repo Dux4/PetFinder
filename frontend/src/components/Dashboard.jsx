@@ -4,10 +4,11 @@ import AnnouncementForm from './AnnouncementForm';
 import AnnouncementList from './AnnouncementList';
 import AnnouncementDetail from './AnnouncementDetail';
 import Map from './Map';
-import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../services/api';
+import ProfileEdit from './ProfileEdit';
+import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById, getCurrentUser } from '../services/api';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [foundPets, setFoundPets] = useState([]);
   const [myAnnouncements, setMyAnnouncements] = useState([]);
@@ -84,6 +85,7 @@ const Dashboard = () => {
     { id: 'criar', label: 'Criar Anúncio', icon: '➕' },
     { id: 'mapa', label: 'Mapa', icon: '🗺️' },
     { id: 'encontrados', label: 'Pets Encontrados', icon: '✅', count: foundPets.length },
+    { id: 'perfil', label: 'Meu Perfil', icon: '⚙️' },
   ];
 
   if (loadingDetail) {
@@ -208,6 +210,18 @@ const Dashboard = () => {
         
         {activeTab === 'criar' && (
           <AnnouncementForm onSuccess={loadData} />
+        )}
+        
+        {activeTab === 'perfil' && (
+          <ProfileEdit onSuccess={async () => {
+            // Recarregar dados do usuário após edição
+            try {
+              const userData = await getCurrentUser();
+              updateUser(userData);
+            } catch (error) {
+              console.error('Erro ao recarregar dados do usuário:', error);
+            }
+          }} />
         )}
       </main>
     </div>

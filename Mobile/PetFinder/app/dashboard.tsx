@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById } from '../services/api';
+import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById, getCurrentUser } from '../services/api';
 
 // Componentes já convertidos
 import AnnouncementList from '../components/AnnouncementList';
 import AnnouncementDetail from '../components/AnnouncementDetail';
 import AnnouncementForm from '../components/AnnouncementForm';
 import Map from '../components/ui/Map';
+import ProfileEdit from '../components/ProfileEdit';
 
 interface Announcement {
     id: number;
@@ -29,7 +30,7 @@ interface Announcement {
 }
 
 const DashboardScreen = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [foundPets, setFoundPets] = useState<Announcement[]>([]);
@@ -86,6 +87,7 @@ const DashboardScreen = () => {
         { id: 'criar', label: 'Criar', icon: '➕' },
         { id: 'mapa', label: 'Mapa', icon: '🗺️' },
         { id: 'encontrados', label: 'Encontrados', icon: '✅', count: foundPets.length },
+        { id: 'perfil', label: 'Perfil', icon: '⚙️' },
     ];
     
     // Mostra o componente de detalhes se um anúncio for selecionado
@@ -323,6 +325,35 @@ const DashboardScreen = () => {
                             </View>
                             <AnnouncementForm onSuccess={handleAnnouncementSuccess} />
                         </ScrollView>
+                    </View>
+                )}
+                
+                {activeTab === 'perfil' && (
+                    <View className="flex-1">
+                        <View className="p-4 border-b border-gray-100 bg-white">
+                            <View className="flex-row items-center gap-2">
+                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
+                                    <Text className="text-xl">⚙️</Text>
+                                </View>
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800">
+                                        Meu Perfil
+                                    </Text>
+                                    <Text className="text-sm text-gray-500">
+                                        Gerencie suas informações
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                        <ProfileEdit onSuccess={async () => {
+                            // Recarregar dados do usuário após edição
+                            try {
+                                const userData = await getCurrentUser();
+                                updateUser(userData);
+                            } catch (error) {
+                                console.error('Erro ao recarregar dados do usuário:', error);
+                            }
+                        }} />
                     </View>
                 )}
             </View>
