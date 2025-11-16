@@ -40,6 +40,27 @@ const ProfileEdit = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validações
+    if (!formData.name || !formData.name.trim()) {
+      setMessage('O nome é obrigatório');
+      return;
+    }
+
+    if (!formData.email || !formData.email.trim()) {
+      setMessage('O email é obrigatório');
+      return;
+    }
+
+    if (!formData.email.includes('@')) {
+      setMessage('Email inválido');
+      return;
+    }
+
+    if (!formData.phone || !formData.phone.trim()) {
+      setMessage('O telefone é obrigatório');
+      return;
+    }
+
     if (formData.password && formData.password !== formData.confirmPassword) {
       setMessage('As senhas não coincidem');
       return;

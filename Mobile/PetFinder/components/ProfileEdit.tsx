@@ -53,6 +53,31 @@ const ProfileEdit: React.FC<ProfileEditProps> = ({ onSuccess }) => {
     };
 
     const handleSubmit = async () => {
+        // Validações
+        if (!formData.name || !formData.name.trim()) {
+            setMessage('O nome é obrigatório');
+            Alert.alert('Erro', 'O nome é obrigatório');
+            return;
+        }
+
+        if (!formData.email || !formData.email.trim()) {
+            setMessage('O email é obrigatório');
+            Alert.alert('Erro', 'O email é obrigatório');
+            return;
+        }
+
+        if (!formData.email.includes('@')) {
+            setMessage('Email inválido');
+            Alert.alert('Erro', 'Email inválido');
+            return;
+        }
+
+        if (!formData.phone || !formData.phone.trim()) {
+            setMessage('O telefone é obrigatório');
+            Alert.alert('Erro', 'O telefone é obrigatório');
+            return;
+        }
+
         if (formData.password && formData.password !== formData.confirmPassword) {
             setMessage('As senhas não coincidem');
             Alert.alert('Erro', 'As senhas não coincidem');

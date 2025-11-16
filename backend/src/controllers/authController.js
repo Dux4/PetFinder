@@ -90,6 +90,23 @@ class AuthController {
       const userId = req.user.id;
       const { name, email, phone, password } = req.body;
 
+      // Validações básicas
+      if (name !== undefined && (!name || name.trim().length === 0)) {
+        return res.status(400).json({ error: 'O nome não pode estar vazio' });
+      }
+
+      if (email !== undefined && (!email || !email.includes('@'))) {
+        return res.status(400).json({ error: 'Email inválido' });
+      }
+
+      if (phone !== undefined && (!phone || phone.trim().length === 0)) {
+        return res.status(400).json({ error: 'O telefone não pode estar vazio' });
+      }
+
+      if (password !== undefined && password.length < 6) {
+        return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+      }
+
       // Verificar se o email já está em uso por outro usuário
       if (email) {
         const existingUser = await User.findByEmail(email);

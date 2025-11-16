@@ -41,12 +41,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const token = await AsyncStorage.getItem('pet-finder-token');
       if (token) {
-        const userData = await getCurrentUser();
-        setUser(userData);
+        try {
+          const userData = await getCurrentUser();
+          setUser(userData);
+        } catch (error) {
+          // Token inválido ou expirado, limpar
+          await AsyncStorage.removeItem('pet-finder-token');
+          setUser(null);
+        }
       }
     } catch (error) {
       console.error("Erro ao verificar autenticação:", error);
       await AsyncStorage.removeItem('pet-finder-token');
+      setUser(null);
     } finally {
       setLoading(false);
     }

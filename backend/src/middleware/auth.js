@@ -19,9 +19,19 @@ const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ error: 'Usuário não encontrado' });
     }
     
-    req.user = user;
+    // Adicionar id ao req.user para compatibilidade
+    req.user = {
+      ...user,
+      id: user.id
+    };
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expirado. Faça login novamente.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(403).json({ error: 'Token inválido' });
+    }
     return res.status(403).json({ error: 'Token inválido ou expirado' });
   }
 };
