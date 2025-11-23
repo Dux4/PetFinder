@@ -31,6 +31,49 @@ class User {
   static validatePassword(plainPassword, hashedPassword) {
     return bcrypt.compareSync(plainPassword, hashedPassword);
   }
+
+  static async update(id, userData) {
+    const { name, email, phone, password } = userData;
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+
+    if (email !== undefined) {
+      updates.push(`email = $${paramCount++}`);
+      values.push(email);
+    }
+
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramCount++}`);
+      values.push(phone);
+    }
+
+    if (password !== undefined) {
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      updates.push(`password = $${paramCount++}`);
+      values.push(hashedPassword);
+    }
+
+    if (updates.length === 0) {
+      return await this.findById(id);
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE users 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING id, name, email, phone, created_at
+    `;
+    
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  }
 }
 
 module.exports = User;

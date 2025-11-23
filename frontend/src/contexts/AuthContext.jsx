@@ -26,21 +26,29 @@ export const AuthProvider = ({ children }) => {
         const userData = await getCurrentUser();
         setUser(userData);
       } catch (error) {
+        // Token inválido ou expirado, limpar
         localStorage.removeItem('pet-finder-token');
+        setUser(null);
       }
     }
     setLoading(false);
   };
 
   const login = (token, userData) => {
-    localStorage.setItem('pet-finder-token', token);
+    if (token) {
+      localStorage.setItem('pet-finder-token', token);
+    }
+    setUser(userData);
+  };
+
+  const updateUser = (userData) => {
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem('pet-finder-token');
     setUser(null);
-    window.location.reload();
+    // Não usar reload, o App.jsx já gerencia o estado baseado em isAuthenticated
   };
 
   return (
@@ -49,6 +57,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       login,
       logout,
+      updateUser,
       isAuthenticated: !!user
     }}>
       {children}

@@ -256,6 +256,41 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
   });
 });
 
+app.put('/api/auth/profile', authenticateToken, (req, res) => {
+  const user = users.find(u => u.id === req.user.id);
+  if (!user) {
+    return res.status(404).json({ error: 'Usuário não encontrado' });
+  }
+
+  const { name, email, phone, password } = req.body;
+
+  // Verificar se o email já está em uso por outro usuário
+  if (email && email !== user.email) {
+    const existingUser = users.find(u => u.email === email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
+  }
+
+  // Atualizar os campos fornecidos
+  if (name !== undefined) user.name = name;
+  if (email !== undefined) user.email = email;
+  if (phone !== undefined) user.phone = phone;
+  if (password !== undefined) {
+    user.password = bcrypt.hashSync(password, 10);
+  }
+
+  res.json({
+    message: 'Perfil atualizado com sucesso',
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone
+    }
+  });
+});
+
 // Announcement routes
 app.post('/api/announcements', authenticateToken, upload.single('image'), (req, res) => {
   const { pet_name, description, type, neighborhood, latitude, longitude } = req.body;

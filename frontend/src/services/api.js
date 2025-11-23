@@ -36,6 +36,11 @@ export const getCurrentUser = async () => {
   return response.data;
 };
 
+export const updateProfile = async (userData) => {
+  const response = await api.put('/auth/profile', userData);
+  return response.data;
+};
+
 export const createAnnouncement = async (formData) => {
   const response = await api.post('/announcements', formData, {
     headers: {
