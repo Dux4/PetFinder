@@ -87,40 +87,24 @@ class AuthController {
 
   static async updateProfile(req, res) {
     try {
-      const userId = req.user.id;
       const { name, email, phone, password } = req.body;
+      const userId = req.user.id;
 
-      // Validações básicas
-      if (name !== undefined && (!name || name.trim().length === 0)) {
-        return res.status(400).json({ error: 'O nome não pode estar vazio' });
-      }
-
-      if (email !== undefined && (!email || !email.includes('@'))) {
-        return res.status(400).json({ error: 'Email inválido' });
-      }
-
-      if (phone !== undefined && (!phone || phone.trim().length === 0)) {
-        return res.status(400).json({ error: 'O telefone não pode estar vazio' });
-      }
-
-      if (password !== undefined && password.length < 6) {
-        return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+      // Validações
+      if (!name || !email || !phone) {
+        return res.status(400).json({ error: 'Nome, email e telefone são obrigatórios' });
       }
 
       // Verificar se o email já está em uso por outro usuário
-      if (email) {
+      if (email !== req.user.email) {
         const existingUser = await User.findByEmail(email);
         if (existingUser && existingUser.id !== userId) {
-          return res.status(400).json({ error: 'Email já cadastrado' });
+          return res.status(400).json({ error: 'Email já está em uso' });
         }
       }
 
-      // Atualizar o perfil
+      // Atualizar dados do usuário
       const updatedUser = await User.update(userId, { name, email, phone, password });
-
-      if (!updatedUser) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
 
       res.json({
         message: 'Perfil atualizado com sucesso',

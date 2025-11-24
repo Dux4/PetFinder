@@ -34,42 +34,30 @@ class User {
 
   static async update(id, userData) {
     const { name, email, phone, password } = userData;
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
+    
+    let query;
+    let values;
 
-    if (name !== undefined) {
-      updates.push(`name = $${paramCount++}`);
-      values.push(name);
-    }
-
-    if (email !== undefined) {
-      updates.push(`email = $${paramCount++}`);
-      values.push(email);
-    }
-
-    if (phone !== undefined) {
-      updates.push(`phone = $${paramCount++}`);
-      values.push(phone);
-    }
-
-    if (password !== undefined) {
+    if (password) {
+      // Se a senha foi fornecida, atualizá-la também
       const hashedPassword = bcrypt.hashSync(password, 10);
-      updates.push(`password = $${paramCount++}`);
-      values.push(hashedPassword);
+      query = `
+        UPDATE users 
+        SET name = $1, email = $2, phone = $3, password = $4
+        WHERE id = $5
+        RETURNING id, name, email, phone, created_at
+      `;
+      values = [name, email, phone, hashedPassword, id];
+    } else {
+      // Atualizar apenas nome, email e telefone
+      query = `
+        UPDATE users 
+        SET name = $1, email = $2, phone = $3
+        WHERE id = $4
+        RETURNING id, name, email, phone, created_at
+      `;
+      values = [name, email, phone, id];
     }
-
-    if (updates.length === 0) {
-      return await this.findById(id);
-    }
-
-    values.push(id);
-    const query = `
-      UPDATE users 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING id, name, email, phone, created_at
-    `;
     
     const result = await pool.query(query, values);
     return result.rows[0];
