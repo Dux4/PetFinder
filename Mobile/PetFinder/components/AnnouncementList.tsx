@@ -57,7 +57,7 @@ const AnnouncementList: React.FC<AnnouncementListProps> = ({
     );
 
     return (
-        <View className="flex-1">
+        <View className="flex-1 px-4 pt-4">
             {/* Header */}
             {title && (
                 <View className="flex-row justify-between items-center mb-6">

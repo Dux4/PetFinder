@@ -176,7 +176,7 @@ const AnnouncementDetail: React.FC<AnnouncementDetailProps> = ({ announcement, o
           colors={['#7c3aed', '#6d28d9', '#5b21b6']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          className="px-4 pt-12 pb-6"
+          className="px-4 pt-12 pb-4"
         >
           <TouchableOpacity 
             onPress={onBack} 

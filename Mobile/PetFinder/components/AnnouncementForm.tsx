@@ -252,7 +252,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   return (
     <View className="flex-1">
       <ScrollView 
-        className="flex-1 p-5"
+        className="flex-1 "
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
