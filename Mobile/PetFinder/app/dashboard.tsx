@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById, getCurrentUser } from '../services/api';
@@ -29,7 +29,10 @@ interface Announcement {
     user_id: number;
 }
 
-const ITEMS_PER_PAGE = 10; // Número de itens por página
+const ITEMS_PER_PAGE = 10;
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isMobile = width < 768;
 
 const DashboardScreen = () => {
     const { user, logout, updateUser } = useAuth();
@@ -84,11 +87,10 @@ const DashboardScreen = () => {
     const handleAnnouncementSuccess = async () => {
         await loadData();
         setActiveTab('todos');
-        setCurrentPageTodos(1); // Resetar para primeira página
+        setCurrentPageTodos(1);
         Alert.alert('Sucesso', 'Anúncio criado com sucesso!');
     };
 
-    // Funções de paginação
     const getPaginatedData = (data: Announcement[], currentPage: number) => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -100,12 +102,11 @@ const DashboardScreen = () => {
     };
 
     const tabs = [
-        { id: 'todos', label: 'Todos', icon: '📋', count: announcements.length },
-        { id: 'meus', label: 'Meus', icon: '👤', count: myAnnouncements.length },
-        { id: 'criar', label: 'Criar', icon: '➕' },
+        { id: 'todos', label: 'Explorar', icon: '🔍', count: announcements.length },
+        { id: 'meus', label: 'Meus', icon: '📝', count: myAnnouncements.length },
+        { id: 'criar', label: 'Anunciar', icon: '➕' },
         { id: 'mapa', label: 'Mapa', icon: '🗺️' },
         { id: 'encontrados', label: 'Encontrados', icon: '✅', count: foundPets.length },
-        { id: 'perfil', label: 'Perfil', icon: '⚙️' },
     ];
     
     if (selectedAnnouncement) {
@@ -121,7 +122,6 @@ const DashboardScreen = () => {
         );
     }
     
-    // Componente de Paginação (será incluído dentro do ScrollView)
     const PaginationControls = ({ 
         currentPage, 
         totalPages, 
@@ -178,37 +178,46 @@ const DashboardScreen = () => {
         );
     };
 
-    // Header Component
+    // Header Component - Com acesso ao perfil e sair
     const Header = () => (
-        <>
-            <LinearGradient
-                colors={['#7c3aed', '#6d28d9', '#5b21b6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="px-4 pb-6 pt-12 shadow-lg"
-            >
-                <View className="flex-row justify-between items-center">
-                    <View className="flex-row items-center gap-4">
-                        <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center">
-                            <Text className="text-3xl">🐾</Text>
-                        </View>
-                        <View>
-                            <Text className="text-2xl font-bold text-white">Pet Finder</Text>
-                            <Text className="text-sm text-white/90">
-                                Olá, {user?.name || 'Visitante'}!
-                            </Text>
-                        </View>
+        <LinearGradient
+            colors={['#7c3aed', '#6d28d9', '#5b21b6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="px-4 pb-4 pt-12 shadow-lg"
+        >
+            <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center gap-3">
+                    <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
+                        <Text className="text-2xl">🐾</Text>
                     </View>
+                    <View>
+                        <Text className="text-xl font-bold text-white">Pet Finder</Text>
+                        <Text className="text-xs text-white/90">
+                            {user?.name || 'Visitante'}
+                        </Text>
+                    </View>
+                </View>
+                
+                <View className="flex-row items-center gap-2">
+                    <TouchableOpacity 
+                        onPress={() => setActiveTab('perfil')}
+                        className="bg-white/20 w-10 h-10 rounded-full items-center justify-center border border-white/30"
+                    >
+                        <Text className="text-xl">⚙️</Text>
+                    </TouchableOpacity>
                     
                     <TouchableOpacity 
                         onPress={logout} 
                         className="bg-white/20 px-4 py-2 rounded-lg border border-white/30"
                     >
-                        <Text className="text-white font-semibold">Sair</Text>
+                        <Text className="text-white font-semibold text-sm">Sair</Text>
                     </TouchableOpacity>
                 </View>
+            </View>
 
-                <View className="flex-row gap-2 mt-6">
+            {!isMobile && (
+                <View className="flex-row gap-2 mt-4">
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
                         <Text className="text-white/80 text-xs mb-1">Ativos</Text>
                         <Text className="text-white text-2xl font-bold">{announcements.length}</Text>
@@ -222,79 +231,146 @@ const DashboardScreen = () => {
                         <Text className="text-white text-2xl font-bold">{foundPets.length}</Text>
                     </View>
                 </View>
-            </LinearGradient>
+            )}
+        </LinearGradient>
+    );
 
-            <View className="bg-white border-b border-gray-200 shadow-sm">
+    // Bottom Navigation (Mobile) - Com scroll horizontal se necessário
+    const BottomNavigation = () => {
+        if (!isMobile) return null;
+
+        return (
+            <View className="bg-white border-t border-gray-200 shadow-lg">
                 <ScrollView 
                     horizontal 
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
+                    contentContainerStyle={{ paddingHorizontal: 8 }}
                 >
-                    {tabs.map((tab) => (
-                        <TouchableOpacity
-                            key={tab.id}
-                            onPress={() => setActiveTab(tab.id)}
-                            className={`flex-row items-center gap-2 px-4 py-3 rounded-xl ${
-                                activeTab === tab.id 
-                                    ? 'bg-purple-700 shadow-md' 
-                                    : 'bg-gray-100'
-                            }`}
-                        >
-                            <Text className="text-base">{tab.icon}</Text>
-                            <Text 
-                                className={`text-sm font-semibold ${
-                                    activeTab === tab.id ? 'text-white' : 'text-gray-700'
-                                }`}
-                            >
-                                {tab.label}
-                            </Text>
-                            {tab.count !== undefined && (
-                                <View 
-                                    className={`px-2 py-1 rounded-full min-w-[24px] items-center ${
-                                        activeTab === tab.id 
-                                            ? 'bg-purple-900' 
-                                            : 'bg-white'
-                                    }`}
+                    <View className="flex-row items-center py-2 gap-1">
+                        {tabs.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <TouchableOpacity
+                                    key={tab.id}
+                                    onPress={() => setActiveTab(tab.id)}
+                                    className="items-center py-2 px-3"
+                                    style={{ minWidth: 70 }}
                                 >
-                                    <Text 
-                                        className={`text-xs font-bold ${
-                                            activeTab === tab.id ? 'text-white' : 'text-gray-700'
-                                        }`}
-                                    >
-                                        {tab.count}
-                                    </Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    ))}
+                                    <View className={`items-center justify-center ${isActive ? 'relative' : ''}`}>
+                                        <View className={`w-12 h-12 items-center justify-center rounded-2xl ${
+                                            isActive ? 'bg-purple-100' : ''
+                                        }`}>
+                                            <Text className="text-2xl">{tab.icon}</Text>
+                                            {tab.count !== undefined && tab.count > 0 && (
+                                                <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
+                                                    <Text className="text-white text-[10px] font-bold">
+                                                        {tab.count > 99 ? '99+' : tab.count}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <Text 
+                                            className={`text-[11px] mt-1 font-medium ${
+                                                isActive ? 'text-purple-700' : 'text-gray-600'
+                                            }`}
+                                            numberOfLines={1}
+                                        >
+                                            {tab.label}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </ScrollView>
             </View>
-        </>
+        );
+    };
+
+    // Top Navigation (Web/Tablet)
+    const TopNavigation = () => {
+        if (isMobile) return null;
+
+        return (
+            <View className="bg-white border-b border-gray-200 shadow-sm">
+                <View className="flex-row px-6 py-3 gap-2">
+                    {tabs.map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <TouchableOpacity
+                                key={tab.id}
+                                onPress={() => setActiveTab(tab.id)}
+                                className={`flex-row items-center gap-2 px-5 py-3 rounded-xl transition-all ${
+                                    isActive 
+                                        ? 'bg-purple-700 shadow-md' 
+                                        : 'bg-gray-100 hover:bg-gray-200'
+                                }`}
+                            >
+                                <Text className="text-lg">{tab.icon}</Text>
+                                <Text 
+                                    className={`text-sm font-semibold ${
+                                        isActive ? 'text-white' : 'text-gray-700'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </Text>
+                                {tab.count !== undefined && (
+                                    <View 
+                                        className={`px-2 py-1 rounded-full min-w-[24px] items-center ${
+                                            isActive 
+                                                ? 'bg-purple-900' 
+                                                : 'bg-white'
+                                        }`}
+                                    >
+                                        <Text 
+                                            className={`text-xs font-bold ${
+                                                isActive ? 'text-white' : 'text-gray-700'
+                                            }`}
+                                        >
+                                            {tab.count}
+                                        </Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+        );
+    };
+
+    // Section Header Component
+    const SectionHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
+        <View className="p-4 bg-white">
+            <View className="flex-row items-center gap-3">
+                <View className="w-12 h-12 bg-purple-100 rounded-2xl items-center justify-center">
+                    <Text className="text-2xl">{icon}</Text>
+                </View>
+                <View className="flex-1">
+                    <Text className="text-lg font-bold text-gray-800">
+                        {title}
+                    </Text>
+                    <Text className="text-sm text-gray-500">
+                        {subtitle}
+                    </Text>
+                </View>
+            </View>
+        </View>
     );
     
-    // Dashboard principal
     return (
         <View className="flex-1 bg-gray-50">
             <Header />
+            <TopNavigation />
 
-            <View className="flex-1">
+            <View className="flex-1" style={{ marginBottom: isMobile ? 0 : 0 }}>
                 {activeTab === 'todos' && (
                     <View className="flex-1">
-                        <View className="p-4">
-                            <View className="flex-row items-center gap-2 mb-4">
-                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">📋</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Todos os Anúncios
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Pets perdidos e encontrados na comunidade
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                        <SectionHeader 
+                            icon="🔍"
+                            title="Explorar Anúncios"
+                            subtitle="Pets perdidos e encontrados"
+                        />
                         <AnnouncementList 
                             announcements={getPaginatedData(announcements, currentPageTodos)} 
                             loading={loading}
@@ -315,21 +391,11 @@ const DashboardScreen = () => {
                 
                 {activeTab === 'meus' && (
                     <View className="flex-1">
-                        <View className="p-4">
-                            <View className="flex-row items-center gap-2 mb-4">
-                                <View className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">👤</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Meus Anúncios
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Gerencie suas publicações
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                        <SectionHeader 
+                            icon="📝"
+                            title="Meus Anúncios"
+                            subtitle="Gerencie suas publicações"
+                        />
                         <AnnouncementList 
                             announcements={getPaginatedData(myAnnouncements, currentPageMeus)} 
                             loading={loading}
@@ -350,21 +416,11 @@ const DashboardScreen = () => {
                 
                 {activeTab === 'encontrados' && (
                     <View className="flex-1">
-                        <View className="p-4">
-                            <View className="flex-row items-center gap-2 mb-4">
-                                <View className="w-10 h-10 bg-green-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">✅</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Pets Encontrados
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Histórias de sucesso da comunidade
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                        <SectionHeader 
+                            icon="✅"
+                            title="Pets Encontrados"
+                            subtitle="Histórias de sucesso"
+                        />
                         <AnnouncementList 
                             announcements={getPaginatedData(foundPets, currentPageEncontrados)} 
                             loading={loading}
@@ -385,21 +441,11 @@ const DashboardScreen = () => {
                 
                 {activeTab === 'mapa' && (
                     <View className="flex-1">
-                        <View className="p-4 border-b border-gray-100 bg-white">
-                            <View className="flex-row items-center gap-2">
-                                <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">🗺️</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Mapa Interativo
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Visualize os pets por localização
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
+                        <SectionHeader 
+                            icon="🗺️"
+                            title="Mapa Interativo"
+                            subtitle="Visualize por localização"
+                        />
                         <Map announcements={announcements} onViewDetail={handleViewDetail} />
                     </View>
                 )}
@@ -407,56 +453,44 @@ const DashboardScreen = () => {
                 {activeTab === 'criar' && (
                     <View className="flex-1">
                         <ScrollView 
-                            className="flex-1 p-4"
+                            className="flex-1"
                             showsVerticalScrollIndicator={false}
                         >
-                            <View className="flex-row items-center gap-2 mb-4">
-                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">➕</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Novo Anúncio
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Compartilhe com a comunidade
-                                    </Text>
-                                </View>
+                            <SectionHeader 
+                                icon="➕"
+                                title="Novo Anúncio"
+                                subtitle="Compartilhe com a comunidade"
+                            />
+                            <View className="p-4">
+                                <AnnouncementForm onSuccess={handleAnnouncementSuccess} />
                             </View>
-                            <AnnouncementForm onSuccess={handleAnnouncementSuccess} />
                         </ScrollView>
                     </View>
                 )}
                 
                 {activeTab === 'perfil' && (
                     <View className="flex-1">
-                        <View className="p-4 border-b border-gray-100 bg-white">
-                            <View className="flex-row items-center gap-2">
-                                <View className="w-10 h-10 bg-purple-100 rounded-full items-center justify-center">
-                                    <Text className="text-xl">⚙️</Text>
-                                </View>
-                                <View>
-                                    <Text className="text-lg font-bold text-gray-800">
-                                        Meu Perfil
-                                    </Text>
-                                    <Text className="text-sm text-gray-500">
-                                        Gerencie suas informações
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                        <ProfileEdit onSuccess={async () => {
-                            // Recarregar dados do usuário após edição
-                            try {
-                                const userData = await getCurrentUser();
-                                updateUser(userData);
-                            } catch (error) {
-                                console.error('Erro ao recarregar dados do usuário:', error);
-                            }
-                        }} />
+                        <SectionHeader 
+                            icon="👤"
+                            title="Meu Perfil"
+                            subtitle="Gerencie suas informações"
+                        />
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <ProfileEdit onSuccess={async () => {
+                                try {
+                                    const userData = await getCurrentUser();
+                                    updateUser(userData);
+                                    Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
+                                } catch (error) {
+                                    console.error('Erro ao recarregar dados do usuário:', error);
+                                }
+                            }} />
+                        </ScrollView>
                     </View>
                 )}
             </View>
+
+            <BottomNavigation />
         </View>
     );
 };
