@@ -39,7 +39,7 @@ const DashboardScreen = () => {
     const { user, logout, updateUser } = useAuth();
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [foundPets, setFoundPets] = useState<Announcement[]>([]);
+    const [resolvedCases, setResolvedCases] = useState<Announcement[]>([]);
     const [myAnnouncements, setMyAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('todos');
@@ -49,7 +49,7 @@ const DashboardScreen = () => {
     // Estados de paginação
     const [currentPageTodos, setCurrentPageTodos] = useState(1);
     const [currentPageMeus, setCurrentPageMeus] = useState(1);
-    const [currentPageEncontrados, setCurrentPageEncontrados] = useState(1);
+    const [currentPageResolvidos, setCurrentPageResolvidos] = useState(1);
 
     useEffect(() => {
         loadData();
@@ -58,14 +58,14 @@ const DashboardScreen = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [allActive, allFound, myAnnounces] = await Promise.all([
+            const [allActive, allResolved, myAnnounces] = await Promise.all([
                 getAllAnnouncements('ativo'),
                 getAllAnnouncements('encontrado'),
                 getMyAnnouncements()
             ]);
             
             setAnnouncements(allActive);
-            setFoundPets(allFound);
+            setResolvedCases(allResolved);
             setMyAnnouncements(myAnnounces);
 
         } catch (error) {
@@ -130,11 +130,11 @@ const DashboardScreen = () => {
             iconType: 'ionicons' as const
         },
         { 
-            id: 'encontrados', 
-            label: 'Encontrados', 
-            icon: 'checkmark-circle', 
+            id: 'resolvidos', 
+            label: 'Resolvidos', 
+            icon: 'heart-circle', 
             iconType: 'ionicons' as const,
-            count: foundPets.length 
+            count: resolvedCases.length 
         },
     ];
     
@@ -268,10 +268,10 @@ const DashboardScreen = () => {
                     </View>
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
                         <View className="flex-row items-center gap-2 mb-1">
-                            <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
-                            <Text className="text-white/80 text-xs">Encontrados</Text>
+                            <Ionicons name="heart-circle" size={14} color="#FFFFFF" />
+                            <Text className="text-white/80 text-xs">Resolvidos</Text>
                         </View>
-                        <Text className="text-white text-2xl font-bold">{foundPets.length}</Text>
+                        <Text className="text-white text-2xl font-bold">{resolvedCases.length}</Text>
                     </View>
                 </View>
             )}
@@ -420,7 +420,7 @@ const DashboardScreen = () => {
                         <SectionHeader 
                             iconName="search"
                             title="Explorar Anúncios"
-                            subtitle="Pets perdidos e encontrados"
+                            subtitle="Pets perdidos e achados na rua"
                         />
                         <AnnouncementList 
                             announcements={getPaginatedData(announcements, currentPageTodos)} 
@@ -465,15 +465,15 @@ const DashboardScreen = () => {
                     </View>
                 )}
                 
-                {activeTab === 'encontrados' && (
+                {activeTab === 'resolvidos' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            iconName="checkmark-circle"
-                            title="Pets Encontrados"
-                            subtitle="Histórias de sucesso"
+                            iconName="heart-circle"
+                            title="Casos Resolvidos"
+                            subtitle="Histórias de sucesso e reencontros"
                         />
                         <AnnouncementList 
-                            announcements={getPaginatedData(foundPets, currentPageEncontrados)} 
+                            announcements={getPaginatedData(resolvedCases, currentPageResolvidos)} 
                             loading={loading}
                             onRefresh={loadData}
                             title=""
@@ -481,9 +481,9 @@ const DashboardScreen = () => {
                             onViewDetail={handleViewDetail}
                             ListFooterComponent={
                                 <PaginationControls
-                                    currentPage={currentPageEncontrados}
-                                    totalPages={getTotalPages(foundPets)}
-                                    onPageChange={setCurrentPageEncontrados}
+                                    currentPage={currentPageResolvidos}
+                                    totalPages={getTotalPages(resolvedCases)}
+                                    onPageChange={setCurrentPageResolvidos}
                                 />
                             }
                         />

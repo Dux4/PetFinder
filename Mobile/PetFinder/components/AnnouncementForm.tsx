@@ -13,7 +13,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { createAnnouncement, getNeighborhoods } from '../services/api';
+import { createAnnouncement } from '../services/api'; 
 import LocationPickerModal from './modal/LocationPickerModal';
 import * as FileSystem from 'expo-file-system';
 
@@ -42,14 +42,14 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState<string | null>(null);
-  const [neighborhoods, setNeighborhoods] = useState<{ id: number; name: string }[]>([]);
+  
+  const [loadingGeo, setLoadingGeo] = useState(false); 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    loadNeighborhoods();
     requestPermissions();
   }, []);
 
@@ -64,39 +64,15 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const loadNeighborhoods = async () => {
-    try {
-      const data = await getNeighborhoods();
-      const formattedData = Array.isArray(data) 
-        ? data.map((name, index) => ({ id: index, name }))
-        : data;
-      setNeighborhoods(formattedData);
-    } catch (error) {
-      console.error('Erro ao carregar bairros:', error);
-      const salvadorNeighborhoods = [
-        'Pelourinho', 'Barra', 'Itapuã', 'Pituba', 'Liberdade', 'Campo Grande',
-        'Rio Vermelho', 'Ondina', 'Federação', 'Brotas', 'Nazaré', 'Barris',
-        'Graça', 'Vitória', 'Corredor da Vitória', 'Canela', 'Imbuí', 
-        'Caminho das Árvores', 'Pituaçu', 'Costa Azul', 'Armação', 'Patamares'
-      ];
-      setNeighborhoods(salvadorNeighborhoods.map((name, index) => ({ id: index, name })));
-    }
-  };
-
   const readImageAsBase64 = async (uri: string) => {
     try {
       if (!uri) return null;
-      console.log('DEBUG: Lendo imagem URI:', uri);
       const base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      if (base64.length > 0) {
-          console.log(`DEBUG: Imagem lida com sucesso. Tamanho Base64: ${base64.length} caracteres.`);
-      }
       return base64;
     } catch (error) {
-      console.error('ERRO: Falha ao ler imagem como Base64:', error);
-      Alert.alert('Erro', 'Não foi possível processar a imagem.');
+      console.error('ERRO: Falha ao ler imagem:', error);
       return null;
     }
   };
@@ -104,7 +80,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Corrigido: usar array em vez de MediaTypeOptions
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -113,30 +89,76 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
         const selectedImage = result.assets[0];
         setImageUri(selectedImage.uri);
         setImageMimeType(selectedImage.mimeType || 'image/jpeg');
-        console.log('Imagem selecionada:', {
-          uri: selectedImage.uri,
-          mimeType: selectedImage.mimeType,
-          width: selectedImage.width,
-          height: selectedImage.height
-        });
       }
     } catch (error) {
-      console.error('ERRO: Falha ao selecionar imagem:', error);
       Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
     }
   };
 
-  const handleLocationConfirm = (position: [number, number]) => {
+  const handleLocationConfirm = async (position: [number, number]) => {
     setSelectedLocation(position);
+    setShowLocationModal(false);
+    setLoadingGeo(true); 
+
+    let fullAddress = '';
+    const lat = position[0];
+    const lng = position[1];
+
+    try {
+      if (Platform.OS === 'web') {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          { headers: { 'User-Agent': 'PetFinderApp/1.0' } }
+        );
+        const data = await response.json();
+        
+        if (data && data.address) {
+          const addr = data.address;
+          const street = addr.road || addr.pedestrian || addr.footway || '';
+          const district = addr.suburb || addr.neighbourhood || addr.city_district || addr.quarter || addr.city || '';
+
+          if (street && district) {
+            fullAddress = `${street} - ${district}`;
+          } else {
+            fullAddress = street || district || '';
+          }
+        }
+      } else {
+        const address = await Location.reverseGeocodeAsync({
+          latitude: lat,
+          longitude: lng
+        });
+
+        if (address.length > 0) {
+          const place = address[0];
+          const street = place.street || place.name || '';
+          const district = place.district || place.subregion || place.city || '';
+
+          if (street && district && street !== district) {
+             fullAddress = `${street} - ${district}`;
+          } else {
+             fullAddress = street || district || '';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao obter endereço:', error);
+    }
+
+    const finalAddress = fullAddress || 'Localização no Mapa';
+
     setFormData(prev => ({
       ...prev,
-      latitude: position[0].toString(),
-      longitude: position[1].toString()
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+      neighborhood: finalAddress
     }));
-    setMessage(`Localização selecionada: Lat ${position[0].toFixed(4)}, Lng ${position[1].toFixed(4)}`);
-    setShowLocationModal(false);
+
+    setMessage(fullAddress ? `Local: ${fullAddress}` : 'Localização selecionada.');
+    setLoadingGeo(false);
   };
 
+  // --- VALIDAÇÃO ATUALIZADA ---
   const validateForm = (): boolean => {
     if (!formData.pet_name.trim()) {
       Alert.alert('Erro', 'Por favor, informe o nome do animal.');
@@ -146,21 +168,23 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
       Alert.alert('Erro', 'Por favor, descreva o animal.');
       return false;
     }
-    if (!formData.neighborhood.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o bairro.');
+    
+    // VERIFICAÇÃO DE IMAGEM ADICIONADA AQUI
+    if (!imageUri) {
+      Alert.alert('Foto Obrigatória', 'Por favor, adicione uma foto do animal para ajudar na identificação.');
       return false;
     }
+
     if (!formData.latitude || !formData.longitude) {
       Alert.alert('Erro', 'Por favor, selecione a localização no mapa.');
       return false;
     }
     return true;
   };
+  // ---------------------------
 
   const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
     
     setLoading(true);
     setMessage('');
@@ -169,60 +193,34 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
       let finalData;
 
       if (Platform.OS === 'web') {
-        // Lógica para Web: usa FormData
         const webFormData = new FormData();
         Object.keys(formData).forEach(key => {
           webFormData.append(key, (formData as any)[key]);
         });
         
         if (imageUri) {
-          console.log('DEBUG: Preparando imagem para web como FormData');
           const response = await fetch(imageUri);
           const blob = await response.blob();
           const filename = imageUri.split('/').pop() || 'photo.jpg';
           webFormData.append('image', blob, filename);
-          console.log('DEBUG: Imagem adicionada ao FormData para web.');
         }
         finalData = webFormData;
       } else {
-        // Lógica para iOS/Android: usa Base64
-        const mobileData: any = {
-          ...formData,
-        };
+        const mobileData: any = { ...formData };
         if (imageUri) {
-          console.log('DEBUG: Preparando imagem para mobile como Base64');
           const base64Image = await readImageAsBase64(imageUri);
           if (base64Image) {
             mobileData.image_data = base64Image;
             mobileData.image_mime_type = imageMimeType || 'image/jpeg';
-            console.log('DEBUG: Imagem preparada:', {
-              mime_type: mobileData.image_mime_type,
-              base64_length: base64Image.length,
-              base64_preview: base64Image.substring(0, 100)
-            });
-          } else {
-            console.error('ERRO: Falha na conversão da imagem para Base64.');
-            setMessage('Erro ao processar a imagem. Tente outra foto.');
-            setLoading(false);
-            return;
           }
         }
-        console.log('DEBUG: Dados mobile completos:', {
-          ...mobileData,
-          image_data: mobileData.image_data ? `Base64(${mobileData.image_data.length} chars)` : null
-        });
         finalData = mobileData;
       }
 
-      console.log('DEBUG: Dados finais para envio:', Platform.OS === 'web' ? 'FormData' : finalData);
-
-      // Enviar para API
-      const response = await createAnnouncement(finalData);
-      console.log('Resposta da API:', response);
+      await createAnnouncement(finalData);
       
       setMessage('Anúncio criado com sucesso!');
       
-      // Resetar formulário
       setFormData({
         pet_name: '',
         description: '',
@@ -236,22 +234,12 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
       setSelectedLocation(null);
       
       if (onSuccess) {
-        setTimeout(() => {
-          onSuccess();
-        }, 1500);
+        setTimeout(() => onSuccess(), 1500);
       }
       
     } catch (error: any) {
-      console.error('ERRO: Falha ao criar anúncio:', error);
-      
-      let errorMessage = 'Erro ao criar anúncio. Tente novamente.';
-      
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+      console.error('ERRO:', error);
+      let errorMessage = error.response?.data?.error || error.message || 'Erro ao criar anúncio.';
       setMessage(errorMessage);
       Alert.alert('Erro', errorMessage);
     } finally {
@@ -259,11 +247,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
     }
   };
 
-  const clearMessage = () => {
-    if (message) {
-      setMessage('');
-    }
-  };
+  const clearMessage = () => { if (message) setMessage(''); };
 
   return (
     <View className="flex-1">
@@ -286,17 +270,17 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
               className={`p-4 rounded-lg mb-5 flex-row justify-between items-center ${
                 message.includes('sucesso') 
                   ? 'bg-green-100 border border-green-400' 
-                  : 'bg-red-100 border border-red-400'
+                  : 'bg-purple-100 border border-purple-400'
               }`}
             >
               <View className="flex-row items-center gap-2 flex-1">
                 <Ionicons 
-                  name={message.includes('sucesso') ? 'checkmark-circle' : 'alert-circle'} 
+                  name={message.includes('sucesso') ? 'checkmark-circle' : 'information-circle'} 
                   size={20} 
-                  color={message.includes('sucesso') ? '#15803d' : '#b91c1c'} 
+                  color={message.includes('sucesso') ? '#15803d' : '#7c3aed'} 
                 />
                 <Text className={`flex-1 text-sm ${
-                  message.includes('sucesso') ? 'text-green-700' : 'text-red-700'
+                  message.includes('sucesso') ? 'text-green-700' : 'text-purple-700'
                 }`}>
                   {message}
                 </Text>
@@ -370,6 +354,9 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                   </Text>
                 </TouchableOpacity>
               </View>
+              <Text className="text-xs text-gray-500 mt-1 mx-1 text-center">
+                Use <Text className="font-bold">Perdido</Text> se procura seu pet, ou <Text className="font-bold">Encontrado</Text> se achou um na rua.
+              </Text>
             </View>
 
             <View className="gap-2">
@@ -385,7 +372,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
                 multiline
                 numberOfLines={4}
-                placeholder="Descreva o animal: porte, cor, características, onde foi visto pela última vez..."
+                placeholder="Descreva o animal: porte, cor, características..."
                 placeholderTextColor="#9CA3AF"
                 textAlignVertical="top"
               />
@@ -394,17 +381,20 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             <View className="gap-2">
               <View className="flex-row items-center gap-2">
                 <Ionicons name="image" size={18} color="#7c3aed" />
+                {/* ADICIONEI O ASTERISCO AQUI */}
                 <Text className="font-semibold text-gray-700 text-base">
-                  Foto do Animal:
+                  Foto do Animal: *
                 </Text>
               </View>
               <TouchableOpacity 
-                className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg gap-3"
+                className={`flex-row items-center justify-center p-4 border-2 border-dashed rounded-lg gap-3 ${
+                   !imageUri ? 'border-gray-300' : 'border-purple-300 bg-purple-50'
+                }`}
                 onPress={pickImage}
               >
                 <Ionicons name="cloud-upload" size={24} color="#7c3aed" />
                 <Text className="text-purple-600 font-semibold text-base">
-                  {imageUri ? 'Alterar foto' : 'Escolher foto'}
+                  {imageUri ? 'Alterar foto' : 'Escolher foto (Obrigatório)'}
                 </Text>
               </TouchableOpacity>
               {imageUri && (
@@ -432,24 +422,8 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
               <View className="flex-row items-center gap-2 mb-4">
                 <Ionicons name="location" size={22} color="#7c3aed" />
                 <Text className="font-semibold text-gray-700 text-lg">
-                  Localização
+                  Localização *
                 </Text>
-              </View>
-              
-              <View className="gap-2 mb-4">
-                <View className="flex-row items-center gap-2">
-                  <Ionicons name="business" size={16} color="#7c3aed" />
-                  <Text className="font-semibold text-gray-700 text-base">
-                    Bairro: *
-                  </Text>
-                </View>
-                <TextInput
-                  className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800 bg-white"
-                  value={formData.neighborhood}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, neighborhood: text }))}
-                  placeholder="Ex: Barra, Ondina, Rio Vermelho..."
-                  placeholderTextColor="#9CA3AF"
-                />
               </View>
               
               <View className="gap-4">
@@ -458,23 +432,36 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                     <View className="flex-row items-center gap-2">
                       <Ionicons name="checkmark-circle" size={20} color="#15803d" />
                       <Text className="font-medium text-green-700 text-base">
-                        Localização selecionada
+                        Localização detetada
                       </Text>
                     </View>
-                    <Text className="text-xs text-green-600">
-                      Coordenadas: {selectedLocation[0].toFixed(4)}, {selectedLocation[1].toFixed(4)}
-                    </Text>
+                    
+                    {loadingGeo ? (
+                       <View className="flex-row items-center mt-1">
+                          <ActivityIndicator size="small" color="#15803d" />
+                          <Text className="text-sm text-green-700 ml-2">Identificando endereço...</Text>
+                       </View>
+                    ) : (
+                      <View>
+                        <Text className="font-bold text-green-800 text-lg mt-1">
+                           {formData.neighborhood || "Endereço não identificado"}
+                        </Text>
+                        <Text className="text-xs text-green-600 mt-1">
+                           Coord: {selectedLocation[0].toFixed(4)}, {selectedLocation[1].toFixed(4)}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 ) : (
                   <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 gap-2">
                     <View className="flex-row items-center gap-2">
                       <Ionicons name="warning" size={20} color="#d97706" />
                       <Text className="font-medium text-yellow-700 text-base">
-                        Localização obrigatória
+                        Obrigatório selecionar no mapa
                       </Text>
                     </View>
                     <Text className="text-xs text-yellow-600">
-                      Clique no botão abaixo para escolher no mapa.
+                      O endereço será preenchido automaticamente.
                     </Text>
                   </View>
                 )}
@@ -485,7 +472,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 >
                   <Ionicons name="map" size={18} color="#fff" />
                   <Text className="text-white font-semibold text-base">
-                    {selectedLocation ? 'Alterar Local' : 'Escolher no Mapa'}
+                    {selectedLocation ? 'Alterar Local no Mapa' : 'Abrir Mapa'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -493,23 +480,23 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
 
             <TouchableOpacity
               onPress={handleSubmit}
-              disabled={loading}
+              disabled={loading || loadingGeo}
               className={`w-full bg-purple-600 py-4 px-6 rounded-lg items-center justify-center mt-2 ${
-                loading ? 'opacity-60' : ''
+                (loading || loadingGeo) ? 'opacity-60' : ''
               }`}
             >
               {loading ? (
                 <View className="flex-row items-center gap-2">
                   <ActivityIndicator color="#fff" size="small" />
                   <Text className="text-white font-semibold text-base">
-                    Criando...
+                    A enviar...
                   </Text>
                 </View>
               ) : (
                 <View className="flex-row items-center gap-2">
                   <Ionicons name="send" size={18} color="#fff" />
                   <Text className="text-white font-semibold text-base">
-                    Criar Anúncio
+                    Publicar Anúncio
                   </Text>
                 </View>
               )}
