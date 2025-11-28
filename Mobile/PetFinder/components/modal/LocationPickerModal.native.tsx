@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Text, View, TouchableOpacity, Modal, Alert, ScrollView } from 'react-native';
+import { Text, View, TouchableOpacity, Modal, Alert, StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 interface LocationPickerModalProps {
   isOpen: boolean;
@@ -74,9 +75,10 @@ const LocationPickerModalNative: React.FC<LocationPickerModalProps> = ({
     >
       <View className="flex-1 bg-white">
         {/* Header */}
-        <View className="bg-indigo-600 pt-12 pb-4 px-5 shadow-lg">
+        <View className="bg-purple-600 pt-12 pb-4 px-5 shadow-lg">
           <View className="flex-row justify-between items-center mb-3">
-            <View className="flex-1">
+            <View className="flex-1 flex-row items-center gap-2">
+              <MaterialIcons name="location-on" size={24} color="white" />
               <Text className="text-xl font-bold text-white">
                 Selecione a Localização
               </Text>
@@ -85,62 +87,63 @@ const LocationPickerModalNative: React.FC<LocationPickerModalProps> = ({
               onPress={onClose} 
               className="w-10 h-10 bg-white/20 rounded-full justify-center items-center"
             >
-              <Text className="text-white text-2xl font-bold">×</Text>
+              <Ionicons name="close" size={24} color="white" />
             </TouchableOpacity>
           </View>
-          <Text className="text-indigo-100 text-sm">
+          <Text className="text-purple-100 text-sm">
             Toque no mapa ou arraste o marcador
           </Text>
         </View>
 
         {/* Info Card */}
-        <View className="bg-blue-50 mx-4 mt-4 p-4 rounded-xl border border-blue-200">
-          <View className="flex-row items-center mb-2">
-            <Text className="text-lg mr-2">💡</Text>
-            <Text className="text-blue-900 font-semibold flex-1">
+        <View className="bg-purple-50 mx-4 mt-4 p-4 rounded-xl border border-purple-200">
+          <View className="flex-row items-center mb-3">
+            <View className="w-8 h-8 bg-purple-500 rounded-full items-center justify-center mr-3">
+              <Ionicons name="information" size={18} color="white" />
+            </View>
+            <Text className="text-purple-900 font-semibold text-base flex-1">
               Como usar:
             </Text>
           </View>
-          <Text className="text-blue-700 text-sm mb-1">
-            • Toque em qualquer ponto do mapa
-          </Text>
-          <Text className="text-blue-700 text-sm mb-1">
-            • Arraste o marcador 📍 para ajustar
-          </Text>
-          <Text className="text-blue-700 text-sm">
-            • Use o botão abaixo para pegar sua localização
-          </Text>
-        </View>
-
-        {/* Coordenadas */}
-        <View className="bg-gray-50 mx-4 mt-3 p-3 rounded-lg border border-gray-200">
-          <Text className="text-gray-600 text-xs mb-1 font-semibold">
-            Coordenadas Selecionadas:
-          </Text>
-          <Text className="text-gray-800 text-sm">
-            📍 Lat: {selectedPosition[0].toFixed(6)}, Lng: {selectedPosition[1].toFixed(6)}
-          </Text>
+          <View className="flex-row items-start mb-2">
+            <MaterialIcons name="touch-app" size={18} color="#7c3aed" />
+            <Text className="text-purple-700 text-sm ml-2 flex-1">
+              Toque em qualquer ponto do mapa
+            </Text>
+          </View>
+          <View className="flex-row items-start mb-2">
+            <MaterialIcons name="open-with" size={18} color="#7c3aed" />
+            <Text className="text-purple-700 text-sm ml-2 flex-1">
+              Arraste o marcador para ajustar
+            </Text>
+          </View>
+          <View className="flex-row items-start">
+            <MaterialIcons name="my-location" size={18} color="#7c3aed" />
+            <Text className="text-purple-700 text-sm ml-2 flex-1">
+              Use o botão abaixo para pegar sua localização
+            </Text>
+          </View>
         </View>
 
         {/* Botão de Localização Atual */}
-        <View className="mx-4 mt-3">
+        <View className="mx-4 mt-4">
           <TouchableOpacity 
             onPress={getCurrentLocation} 
-            className="bg-green-500 py-3 px-4 rounded-xl flex-row items-center justify-center shadow-lg active:bg-green-600"
+            className="bg-purple-600 py-3.5 px-4 rounded-xl flex-row items-center justify-center shadow-lg active:bg-purple-700"
           >
-            <Text className="text-lg mr-2">📱</Text>
-            <Text className="text-white font-bold text-base">
+            <MaterialIcons name="my-location" size={20} color="white" />
+            <Text className="text-white font-bold text-base ml-2">
               Usar Minha Localização Atual
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Mapa */}
-        <View className="flex-1 m-4 rounded-2xl overflow-hidden shadow-lg border-2 border-gray-200">
+        <View className="flex-1 m-4 rounded-2xl overflow-hidden shadow-lg border-2 border-purple-200">
           <MapView
             ref={mapRef}
             provider={PROVIDER_DEFAULT}
-            style={{ flex: 1 }}
+            style={StyleSheet.absoluteFillObject}
             initialRegion={{
               latitude: selectedPosition[0],
               longitude: selectedPosition[1],
@@ -156,7 +159,7 @@ const LocationPickerModalNative: React.FC<LocationPickerModalProps> = ({
               }}
               draggable
               onDragEnd={handleMarkerDragEnd}
-              pinColor="#4F46E5"
+              pinColor="#7c3aed"
             />
           </MapView>
         </View>
@@ -165,19 +168,21 @@ const LocationPickerModalNative: React.FC<LocationPickerModalProps> = ({
         <View className="px-4 pb-6 pt-2 bg-white border-t border-gray-200 flex-row gap-3">
           <TouchableOpacity 
             onPress={onClose} 
-            className="flex-1 bg-white border-2 border-gray-300 py-4 rounded-xl active:bg-gray-50"
+            className="flex-1 bg-white border-2 border-gray-300 py-4 rounded-xl flex-row items-center justify-center active:bg-gray-50"
           >
-            <Text className="text-gray-700 font-bold text-center text-base">
+            <Ionicons name="close-circle-outline" size={20} color="#374151" />
+            <Text className="text-gray-700 font-bold text-base ml-2">
               Cancelar
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={handleConfirm} 
-            className="flex-1 bg-indigo-600 py-4 rounded-xl active:bg-indigo-700"
+            className="flex-1 bg-purple-600 py-4 rounded-xl flex-row items-center justify-center active:bg-purple-700"
             disabled={!selectedPosition}
           >
-            <Text className="text-white font-bold text-center text-base">
-              Confirmar Local
+            <Ionicons name="checkmark-circle" size={20} color="white" />
+            <Text className="text-white font-bold text-base ml-2">
+              Confirmar
             </Text>
           </TouchableOpacity>
         </View>

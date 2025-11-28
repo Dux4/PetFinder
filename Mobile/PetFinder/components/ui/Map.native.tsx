@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Image, ScrollView, Modal } from 'react-native';
+import { Text, View, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 
 interface Announcement {
     id: number;
@@ -53,11 +54,11 @@ const MapNative: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
     };
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1">
             <MapView
                 ref={mapRef}
                 provider={PROVIDER_DEFAULT}
-                style={styles.map}
+                style={StyleSheet.absoluteFillObject}
                 initialRegion={{
                     latitude: -12.9714,
                     longitude: -38.5014,
@@ -79,13 +80,14 @@ const MapNative: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                             }}
                             onPress={() => handleMarkerPress(announcement)}
                         >
-                            <View style={[
-                                styles.markerContainer,
-                                { backgroundColor: isPerdido ? '#dc2626' : '#16a34a' }
-                            ]}>
-                                <Text style={styles.markerEmoji}>
-                                    {isPerdido ? '🔍' : '✓'}
-                                </Text>
+                            <View className={`w-8 h-8 rounded-full border-[3px] border-white items-center justify-center shadow-lg ${
+                                isPerdido ? 'bg-red-600' : 'bg-green-600'
+                            }`}>
+                                {isPerdido ? (
+                                    <Ionicons name="search" size={16} color="white" />
+                                ) : (
+                                    <Ionicons name="checkmark" size={18} color="white" />
+                                )}
                             </View>
                         </Marker>
                     );
@@ -93,102 +95,123 @@ const MapNative: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
             </MapView>
 
             {/* Badges Flutuantes */}
-            <View style={styles.badgesContainer}>
-                <View style={styles.badgeLost}>
-                    <Text style={styles.badgeTextLost}>
-                        🔴 Perdidos: {lostPets.length}
-                    </Text>
+            <View className="absolute top-4 left-4 right-4 flex-row flex-wrap gap-2 z-20">
+                <View className="bg-white/95 border border-red-200 px-3 py-2 rounded-full shadow-sm">
+                    <View className="flex-row items-center gap-1.5">
+                        <View className="w-2 h-2 rounded-full bg-red-600" />
+                        <Text className="text-red-700 font-semibold text-xs">
+                            Perdidos: {lostPets.length}
+                        </Text>
+                    </View>
                 </View>
-                <View style={styles.badgeFound}>
-                    <Text style={styles.badgeTextFound}>
-                        🟢 Encontrados: {foundPets.length}
-                    </Text>
+                
+                <View className="bg-white/95 border border-green-200 px-3 py-2 rounded-full shadow-sm">
+                    <View className="flex-row items-center gap-1.5">
+                        <View className="w-2 h-2 rounded-full bg-green-600" />
+                        <Text className="text-green-700 font-semibold text-xs">
+                            Encontrados: {foundPets.length}
+                        </Text>
+                    </View>
                 </View>
-                <View style={styles.badgeTotal}>
-                    <Text style={styles.badgeTextTotal}>
-                        📍 Total: {validAnnouncements.length}
-                    </Text>
+                
+                <View className="bg-white/95 border border-purple-200 px-3 py-2 rounded-full shadow-sm">
+                    <View className="flex-row items-center gap-1.5">
+                        <MaterialIcons name="pets" size={14} color="#7c3aed" />
+                        <Text className="text-purple-700 font-semibold text-xs">
+                            Total: {validAnnouncements.length}
+                        </Text>
+                    </View>
                 </View>
             </View>
 
             {/* Modal de Detalhes do Marcador */}
             {selectedAnnouncement && (
-                <View style={styles.calloutContainer}>
+                <View className="absolute inset-0 z-[1000]">
                     <TouchableOpacity 
-                        style={styles.calloutOverlay}
+                        className="absolute inset-0 bg-black/50"
                         activeOpacity={1}
                         onPress={() => setSelectedAnnouncement(null)}
                     />
-                    <View style={styles.calloutCard}>
-                        {/* Header com gradiente simulado */}
-                        <View style={[
-                            styles.calloutHeader,
-                            { backgroundColor: selectedAnnouncement.type === 'perdido' ? '#dc2626' : '#16a34a' }
-                        ]}>
-                            <Text style={styles.calloutHeaderText}>
-                                {selectedAnnouncement.pet_name} - {selectedAnnouncement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
-                            </Text>
+                    <View className="absolute bottom-5 left-5 right-5 bg-white rounded-xl max-h-[70%] shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <View className={`p-4 ${
+                            selectedAnnouncement.type === 'perdido' ? 'bg-red-600' : 'bg-green-600'
+                        }`}>
+                            <View className="flex-row items-center justify-center gap-2">
+                                {selectedAnnouncement.type === 'perdido' ? (
+                                    <Ionicons name="search" size={20} color="white" />
+                                ) : (
+                                    <FontAwesome5 name="home" size={18} color="white" />
+                                )}
+                                <Text className="text-white font-bold text-base text-center">
+                                    {selectedAnnouncement.pet_name} - {selectedAnnouncement.type === 'perdido' ? 'Perdido' : 'Encontrado'}
+                                </Text>
+                            </View>
                         </View>
 
-                        <ScrollView style={styles.calloutContent} showsVerticalScrollIndicator={false}>
+                        <ScrollView className="p-4" showsVerticalScrollIndicator={false}>
                             {/* Imagem do Pet */}
                             {selectedAnnouncement.image_data && (
                                 <Image 
                                     source={{ uri: selectedAnnouncement.image_data }}
-                                    style={styles.petImage}
+                                    className="w-full h-44 rounded-xl mb-4"
                                     resizeMode="cover"
                                 />
                             )}
 
                             {/* Localização */}
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoIcon}>📍</Text>
-                                <Text style={styles.infoText}>
+                            <View className="flex-row items-center mb-3 gap-2">
+                                <MaterialIcons name="location-on" size={20} color="#7c3aed" />
+                                <Text className="text-gray-700 font-medium text-sm flex-1">
                                     {selectedAnnouncement.neighborhood || 'Não informado'}
                                 </Text>
                             </View>
 
                             {/* Data */}
-                            <View style={styles.infoRow}>
-                                <Text style={styles.infoIcon}>📅</Text>
-                                <Text style={styles.infoTextSecondary}>
+                            <View className="flex-row items-center mb-3 gap-2">
+                                <MaterialIcons name="calendar-today" size={18} color="#9333ea" />
+                                <Text className="text-gray-600 text-sm flex-1">
                                     {new Date(selectedAnnouncement.created_at).toLocaleDateString('pt-BR')}
                                 </Text>
                             </View>
 
                             {/* Botão Ver Detalhes */}
                             <TouchableOpacity 
-                                style={styles.detailButton}
+                                className="w-full p-3.5 bg-purple-600 rounded-lg mt-2 shadow-md active:bg-purple-700"
                                 onPress={handleViewDetail}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.detailButtonText}>
-                                    Ver Detalhes Completos
-                                </Text>
+                                <View className="flex-row items-center justify-center gap-2">
+                                    <MaterialIcons name="visibility" size={18} color="white" />
+                                    <Text className="text-white font-semibold text-sm">
+                                        Ver Detalhes Completos
+                                    </Text>
+                                </View>
                             </TouchableOpacity>
                         </ScrollView>
 
                         {/* Botão Fechar */}
                         <TouchableOpacity 
-                            style={styles.closeButton}
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/20 items-center justify-center z-10"
                             onPress={() => setSelectedAnnouncement(null)}
                         >
-                            <Text style={styles.closeButtonText}>✕</Text>
+                            <Ionicons name="close" size={20} color="white" />
                         </TouchableOpacity>
                     </View>
                 </View>
             )}
 
+            {/* Empty State */}
             {validAnnouncements.length === 0 && (
-                <View style={styles.emptyContainer}>
-                    <View style={styles.emptyCard}>
-                        <View style={styles.emptyIcon}>
-                            <Text style={styles.emptyEmoji}>🗺️</Text>
+                <View className="absolute inset-0 bg-white/95 justify-center items-center z-10">
+                    <View className="items-center px-8 max-w-[400px]">
+                        <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
+                            <MaterialIcons name="map" size={48} color="#7c3aed" />
                         </View>
-                        <Text style={styles.emptyTitle}>
+                        <Text className="text-xl font-semibold text-gray-800 mb-3 text-center">
                             Nenhum pet localizado
                         </Text>
-                        <Text style={styles.emptyText}>
+                        <Text className="text-sm text-gray-600 text-center leading-5">
                             Quando houver anúncios com localização GPS válida, os marcadores aparecerão automaticamente aqui no mapa de Salvador.
                         </Text>
                     </View>
@@ -197,232 +220,5 @@ const MapNative: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    map: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    markerContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        borderWidth: 3,
-        borderColor: 'white',
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 5,
-    },
-    markerEmoji: {
-        fontSize: 14,
-    },
-    badgesContainer: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        right: 16,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        zIndex: 20,
-    },
-    badgeLost: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderWidth: 1,
-        borderColor: '#fecaca',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    badgeTextLost: {
-        color: '#b91c1c',
-        fontWeight: '600',
-        fontSize: 12,
-    },
-    badgeFound: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderWidth: 1,
-        borderColor: '#bbf7d0',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    badgeTextFound: {
-        color: '#15803d',
-        fontWeight: '600',
-        fontSize: 12,
-    },
-    badgeTotal: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderWidth: 1,
-        borderColor: '#e9d5ff',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    badgeTextTotal: {
-        color: '#6d28d9',
-        fontWeight: '600',
-        fontSize: 12,
-    },
-    calloutContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
-    },
-    calloutOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    calloutCard: {
-        position: 'absolute',
-        bottom: 20,
-        left: 20,
-        right: 20,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        maxHeight: '70%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.25,
-        shadowRadius: 25,
-        elevation: 10,
-        overflow: 'hidden',
-    },
-    calloutHeader: {
-        padding: 16,
-    },
-    calloutHeaderText: {
-        color: 'white',
-        fontWeight: '700',
-        fontSize: 16,
-        textAlign: 'center',
-    },
-    calloutContent: {
-        padding: 16,
-    },
-    petImage: {
-        width: '100%',
-        height: 180,
-        borderRadius: 12,
-        marginBottom: 16,
-    },
-    infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        gap: 8,
-    },
-    infoIcon: {
-        fontSize: 18,
-    },
-    infoText: {
-        color: '#374151',
-        fontWeight: '500',
-        fontSize: 15,
-        flex: 1,
-    },
-    infoTextSecondary: {
-        color: '#6b7280',
-        fontSize: 14,
-        flex: 1,
-    },
-    detailButton: {
-        width: '100%',
-        padding: 14,
-        backgroundColor: '#7c3aed',
-        borderRadius: 10,
-        marginTop: 8,
-        shadowColor: '#7c3aed',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    detailButtonText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 15,
-        textAlign: 'center',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-    },
-    closeButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    emptyContainer: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    emptyCard: {
-        alignItems: 'center',
-        padding: 32,
-        maxWidth: 400,
-    },
-    emptyIcon: {
-        width: 96,
-        height: 96,
-        backgroundColor: '#f3e8ff',
-        borderRadius: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-    },
-    emptyEmoji: {
-        fontSize: 48,
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#1f2937',
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    emptyText: {
-        fontSize: 14,
-        color: '#4b5563',
-        textAlign: 'center',
-        lineHeight: 21,
-    },
-});
 
 export default MapNative;

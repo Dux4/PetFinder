@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View } from 'react-native';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 
 interface Announcement {
     id: number;
@@ -78,22 +79,27 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                     const lng = parseFloat(announcement.longitude);
 
                     if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                        const isPerdido = announcement.type === 'perdido';
+                        const markerColor = isPerdido ? '#dc2626' : '#16a34a';
+                        const iconSvg = isPerdido 
+                            ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`
+                            : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+
                         const icon = window.L.divIcon({
                             className: 'custom-marker',
                             html: `<div style="
                                 width: 32px; 
                                 height: 32px; 
                                 border-radius: 50%; 
-                                background: ${announcement.type === 'perdido' ? '#dc2626' : '#16a34a'};
+                                background: ${markerColor};
                                 border: 3px solid white;
                                 box-shadow: 0 4px 6px rgba(0,0,0,0.3);
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                font-size: 14px;
                                 cursor: pointer;
                                 transition: transform 0.2s;
-                            ">${announcement.type === 'perdido' ? '🔍' : '✓'}</div>`,
+                            ">${iconSvg}</div>`,
                             iconSize: [32, 32],
                             iconAnchor: [16, 16]
                         });
@@ -105,26 +111,37 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                                 style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;" />
                         ` : '';
 
+                        const headerIcon = isPerdido 
+                            ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`
+                            : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18" style="display: inline-block; vertical-align: middle; margin-right: 6px;"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
+
                         const popupContent = `
                             <div style="min-width: 240px; font-family: system-ui, -apple-system, sans-serif;">
                                 <div style="
-                                    background: linear-gradient(135deg, ${announcement.type === 'perdido' ? '#dc2626, #b91c1c' : '#16a34a, #15803d'}); 
+                                    background: linear-gradient(135deg, ${isPerdido ? '#dc2626, #b91c1c' : '#16a34a, #15803d'}); 
                                     color: white; 
                                     padding: 12px 16px; 
                                     margin: -10px -13px 12px -13px;
                                     font-weight: 700;
                                     font-size: 15px;
                                     border-radius: 8px 8px 0 0;
+                                    display: flex;
+                                    align-items: center;
                                 ">
-                                    ${announcement.pet_name} - ${announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
+                                    ${headerIcon}
+                                    <span>${announcement.pet_name} - ${isPerdido ? 'Perdido' : 'Encontrado'}</span>
                                 </div>
                                 ${imageHtml}
                                 <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                                    <span style="color: #7c3aed;">📍</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#7c3aed" width="18" height="18">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
                                     <span style="color: #374151; font-weight: 500;">${announcement.neighborhood || 'Não informado'}</span>
                                 </div>
                                 <div style="margin-bottom: 12px; color: #6b7280; font-size: 13px; display: flex; align-items: center; gap: 6px;">
-                                    <span>📅</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#9333ea" width="16" height="16">
+                                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                                    </svg>
                                     <span>${new Date(announcement.created_at).toLocaleDateString('pt-BR')}</span>
                                 </div>
                                 <button 
@@ -141,11 +158,18 @@ const LeafletMap: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
                                         font-size: 14px;
                                         transition: all 0.2s;
                                         box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        gap: 6px;
                                     "
                                     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(124, 58, 237, 0.4)'"
                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(124, 58, 237, 0.3)'"
                                 >
-                                    Ver Detalhes Completos
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18" height="18">
+                                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                                    </svg>
+                                    <span>Ver Detalhes Completos</span>
                                 </button>
                             </div>
                         `;
@@ -253,29 +277,42 @@ const MapWeb: React.FC<MapProps> = ({ announcements, onViewDetail }) => {
             <View className="flex-1">
                 <LeafletMap announcements={validAnnouncements} onViewDetail={onViewDetail} />
                 
+                {/* Badges Flutuantes */}
                 <View className="absolute top-4 left-4 right-4 flex-row flex-wrap gap-2 z-20">
                     <View className="bg-white/95 backdrop-blur border border-red-200 px-3 py-2 rounded-full shadow-lg">
-                        <Text className="text-red-700 font-semibold text-xs">
-                            🔴 Perdidos: {lostPets.length}
-                        </Text>
+                        <View className="flex-row items-center gap-1.5">
+                            <View className="w-2 h-2 rounded-full bg-red-600" />
+                            <Text className="text-red-700 font-semibold text-xs">
+                                Perdidos: {lostPets.length}
+                            </Text>
+                        </View>
                     </View>
+                    
                     <View className="bg-white/95 backdrop-blur border border-green-200 px-3 py-2 rounded-full shadow-lg">
-                        <Text className="text-green-700 font-semibold text-xs">
-                            🟢 Encontrados: {foundPets.length}
-                        </Text>
+                        <View className="flex-row items-center gap-1.5">
+                            <View className="w-2 h-2 rounded-full bg-green-600" />
+                            <Text className="text-green-700 font-semibold text-xs">
+                                Encontrados: {foundPets.length}
+                            </Text>
+                        </View>
                     </View>
+                    
                     <View className="bg-white/95 backdrop-blur border border-purple-200 px-3 py-2 rounded-full shadow-lg">
-                        <Text className="text-purple-700 font-semibold text-xs">
-                            📍 Total: {validAnnouncements.length}
-                        </Text>
+                        <View className="flex-row items-center gap-1.5">
+                            <MaterialIcons name="pets" size={14} color="#7c3aed" />
+                            <Text className="text-purple-700 font-semibold text-xs">
+                                Total: {validAnnouncements.length}
+                            </Text>
+                        </View>
                     </View>
                 </View>
                 
+                {/* Empty State */}
                 {validAnnouncements.length === 0 && (
                     <View className="absolute inset-0 bg-white/95 justify-center items-center z-10">
                         <View className="items-center p-8 max-w-md">
                             <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
-                                <Text className="text-5xl">🗺️</Text>
+                                <MaterialIcons name="map" size={48} color="#7c3aed" />
                             </View>
                             <Text className="text-xl font-semibold text-gray-800 mb-3 text-center">
                                 Nenhum pet localizado
