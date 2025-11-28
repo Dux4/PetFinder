@@ -3,6 +3,7 @@ import { Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Dim
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getAllAnnouncements, getMyAnnouncements, getAnnouncementById, getCurrentUser } from '../services/api';
+import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 
 // Componentes já convertidos
 import AnnouncementList from '../components/AnnouncementList';
@@ -102,11 +103,39 @@ const DashboardScreen = () => {
     };
 
     const tabs = [
-        { id: 'todos', label: 'Explorar', icon: '🔍', count: announcements.length },
-        { id: 'meus', label: 'Meus', icon: '📝', count: myAnnouncements.length },
-        { id: 'criar', label: 'Anunciar', icon: '➕' },
-        { id: 'mapa', label: 'Mapa', icon: '🗺️' },
-        { id: 'encontrados', label: 'Encontrados', icon: '✅', count: foundPets.length },
+        { 
+            id: 'todos', 
+            label: 'Explorar', 
+            icon: 'search', 
+            iconType: 'ionicons' as const,
+            count: announcements.length 
+        },
+        { 
+            id: 'meus', 
+            label: 'Meus', 
+            icon: 'document-text', 
+            iconType: 'ionicons' as const,
+            count: myAnnouncements.length 
+        },
+        { 
+            id: 'criar', 
+            label: 'Anunciar', 
+            icon: 'add-circle', 
+            iconType: 'ionicons' as const
+        },
+        { 
+            id: 'mapa', 
+            label: 'Mapa', 
+            icon: 'map', 
+            iconType: 'ionicons' as const
+        },
+        { 
+            id: 'encontrados', 
+            label: 'Encontrados', 
+            icon: 'checkmark-circle', 
+            iconType: 'ionicons' as const,
+            count: foundPets.length 
+        },
     ];
     
     if (selectedAnnouncement) {
@@ -144,9 +173,11 @@ const DashboardScreen = () => {
                             : 'bg-purple-700'
                     }`}
                 >
-                    <Text className={`text-lg ${currentPage === 1 ? 'text-gray-400' : 'text-white'}`}>
-                        ←
-                    </Text>
+                    <Ionicons 
+                        name="chevron-back" 
+                        size={20} 
+                        color={currentPage === 1 ? '#9CA3AF' : '#FFFFFF'} 
+                    />
                     <Text className={`font-semibold ${currentPage === 1 ? 'text-gray-400' : 'text-white'}`}>
                         Anterior
                     </Text>
@@ -170,15 +201,17 @@ const DashboardScreen = () => {
                     <Text className={`font-semibold ${currentPage === totalPages ? 'text-gray-400' : 'text-white'}`}>
                         Próxima
                     </Text>
-                    <Text className={`text-lg ${currentPage === totalPages ? 'text-gray-400' : 'text-white'}`}>
-                        →
-                    </Text>
+                    <Ionicons 
+                        name="chevron-forward" 
+                        size={20} 
+                        color={currentPage === totalPages ? '#9CA3AF' : '#FFFFFF'} 
+                    />
                 </TouchableOpacity>
             </View>
         );
     };
 
-    // Header Component - Com acesso ao perfil e sair
+    // Header Component
     const Header = () => (
         <LinearGradient
             colors={['#7c3aed', '#6d28d9', '#5b21b6']}
@@ -189,7 +222,7 @@ const DashboardScreen = () => {
             <View className="flex-row justify-between items-center">
                 <View className="flex-row items-center gap-3">
                     <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
-                        <Text className="text-2xl">🐾</Text>
+                        <FontAwesome5 name="paw" size={20} color="#FFFFFF" />
                     </View>
                     <View>
                         <Text className="text-xl font-bold text-white">Pet Finder</Text>
@@ -204,13 +237,14 @@ const DashboardScreen = () => {
                         onPress={() => setActiveTab('perfil')}
                         className="bg-white/20 w-10 h-10 rounded-full items-center justify-center border border-white/30"
                     >
-                        <Text className="text-xl">⚙️</Text>
+                        <Ionicons name="settings" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
                         onPress={logout} 
-                        className="bg-white/20 px-4 py-2 rounded-lg border border-white/30"
+                        className="bg-white/20 px-4 py-2 rounded-lg border border-white/30 flex-row items-center gap-2"
                     >
+                        <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
                         <Text className="text-white font-semibold text-sm">Sair</Text>
                     </TouchableOpacity>
                 </View>
@@ -219,15 +253,24 @@ const DashboardScreen = () => {
             {!isMobile && (
                 <View className="flex-row gap-2 mt-4">
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
-                        <Text className="text-white/80 text-xs mb-1">Ativos</Text>
+                        <View className="flex-row items-center gap-2 mb-1">
+                            <Ionicons name="paw" size={14} color="#FFFFFF" />
+                            <Text className="text-white/80 text-xs">Ativos</Text>
+                        </View>
                         <Text className="text-white text-2xl font-bold">{announcements.length}</Text>
                     </View>
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
-                        <Text className="text-white/80 text-xs mb-1">Meus</Text>
+                        <View className="flex-row items-center gap-2 mb-1">
+                            <Ionicons name="document-text" size={14} color="#FFFFFF" />
+                            <Text className="text-white/80 text-xs">Meus</Text>
+                        </View>
                         <Text className="text-white text-2xl font-bold">{myAnnouncements.length}</Text>
                     </View>
                     <View className="flex-1 bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-white/20">
-                        <Text className="text-white/80 text-xs mb-1">Encontrados</Text>
+                        <View className="flex-row items-center gap-2 mb-1">
+                            <Ionicons name="checkmark-circle" size={14} color="#FFFFFF" />
+                            <Text className="text-white/80 text-xs">Encontrados</Text>
+                        </View>
                         <Text className="text-white text-2xl font-bold">{foundPets.length}</Text>
                     </View>
                 </View>
@@ -235,7 +278,7 @@ const DashboardScreen = () => {
         </LinearGradient>
     );
 
-    // Bottom Navigation (Mobile) - Com scroll horizontal se necessário
+    // Bottom Navigation (Mobile)
     const BottomNavigation = () => {
         if (!isMobile) return null;
 
@@ -260,7 +303,11 @@ const DashboardScreen = () => {
                                         <View className={`w-12 h-12 items-center justify-center rounded-2xl ${
                                             isActive ? 'bg-purple-100' : ''
                                         }`}>
-                                            <Text className="text-2xl">{tab.icon}</Text>
+                                            <Ionicons 
+                                                name={tab.icon as any} 
+                                                size={24} 
+                                                color={isActive ? '#7c3aed' : '#6B7280'} 
+                                            />
                                             {tab.count !== undefined && tab.count > 0 && (
                                                 <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
                                                     <Text className="text-white text-[10px] font-bold">
@@ -306,7 +353,11 @@ const DashboardScreen = () => {
                                         : 'bg-gray-100 hover:bg-gray-200'
                                 }`}
                             >
-                                <Text className="text-lg">{tab.icon}</Text>
+                                <Ionicons 
+                                    name={tab.icon as any} 
+                                    size={20} 
+                                    color={isActive ? '#FFFFFF' : '#374151'} 
+                                />
                                 <Text 
                                     className={`text-sm font-semibold ${
                                         isActive ? 'text-white' : 'text-gray-700'
@@ -340,11 +391,11 @@ const DashboardScreen = () => {
     };
 
     // Section Header Component
-    const SectionHeader = ({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) => (
+    const SectionHeader = ({ iconName, title, subtitle }: { iconName: string; title: string; subtitle: string }) => (
         <View className="p-4 bg-white">
             <View className="flex-row items-center gap-3">
                 <View className="w-12 h-12 bg-purple-100 rounded-2xl items-center justify-center">
-                    <Text className="text-2xl">{icon}</Text>
+                    <Ionicons name={iconName as any} size={24} color="#7c3aed" />
                 </View>
                 <View className="flex-1">
                     <Text className="text-lg font-bold text-gray-800">
@@ -367,7 +418,7 @@ const DashboardScreen = () => {
                 {activeTab === 'todos' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            icon="🔍"
+                            iconName="search"
                             title="Explorar Anúncios"
                             subtitle="Pets perdidos e encontrados"
                         />
@@ -392,7 +443,7 @@ const DashboardScreen = () => {
                 {activeTab === 'meus' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            icon="📝"
+                            iconName="document-text"
                             title="Meus Anúncios"
                             subtitle="Gerencie suas publicações"
                         />
@@ -417,7 +468,7 @@ const DashboardScreen = () => {
                 {activeTab === 'encontrados' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            icon="✅"
+                            iconName="checkmark-circle"
                             title="Pets Encontrados"
                             subtitle="Histórias de sucesso"
                         />
@@ -442,7 +493,7 @@ const DashboardScreen = () => {
                 {activeTab === 'mapa' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            icon="🗺️"
+                            iconName="map"
                             title="Mapa Interativo"
                             subtitle="Visualize por localização"
                         />
@@ -457,7 +508,7 @@ const DashboardScreen = () => {
                             showsVerticalScrollIndicator={false}
                         >
                             <SectionHeader 
-                                icon="➕"
+                                iconName="add-circle"
                                 title="Novo Anúncio"
                                 subtitle="Compartilhe com a comunidade"
                             />
@@ -471,7 +522,7 @@ const DashboardScreen = () => {
                 {activeTab === 'perfil' && (
                     <View className="flex-1">
                         <SectionHeader 
-                            icon="👤"
+                            iconName="person-circle"
                             title="Meu Perfil"
                             subtitle="Gerencie suas informações"
                         />

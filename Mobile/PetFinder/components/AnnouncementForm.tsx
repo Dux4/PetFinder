@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { createAnnouncement, getNeighborhoods } from '../services/api';
 import LocationPickerModal from './modal/LocationPickerModal';
 import * as FileSystem from 'expo-file-system';
@@ -273,9 +273,12 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
         showsVerticalScrollIndicator={false}
       >
         <View className="bg-white rounded-2xl p-6 shadow-lg">
-          <Text className="text-2xl font-bold text-gray-800 mb-6 text-center">
-            Criar Novo Anúncio
-          </Text>
+          <View className="flex-row items-center justify-center gap-2 mb-6">
+            <Ionicons name="add-circle" size={28} color="#7c3aed" />
+            <Text className="text-2xl font-bold text-gray-800">
+              Criar Novo Anúncio
+            </Text>
+          </View>
           
           {message && (
             <TouchableOpacity 
@@ -286,20 +289,30 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                   : 'bg-red-100 border border-red-400'
               }`}
             >
-              <Text className={`flex-1 text-sm ${
-                message.includes('sucesso') ? 'text-green-700' : 'text-red-700'
-              }`}>
-                {message}
-              </Text>
-              <Text className="text-gray-600 text-base font-bold ml-2">✕</Text>
+              <View className="flex-row items-center gap-2 flex-1">
+                <Ionicons 
+                  name={message.includes('sucesso') ? 'checkmark-circle' : 'alert-circle'} 
+                  size={20} 
+                  color={message.includes('sucesso') ? '#15803d' : '#b91c1c'} 
+                />
+                <Text className={`flex-1 text-sm ${
+                  message.includes('sucesso') ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {message}
+                </Text>
+              </View>
+              <Ionicons name="close" size={20} color="#6b7280" />
             </TouchableOpacity>
           )}
 
           <View className="gap-5">
             <View className="gap-2">
-              <Text className="font-semibold text-gray-700 text-base">
-                Nome do Animal: *
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="paw" size={18} color="#7c3aed" />
+                <Text className="font-semibold text-gray-700 text-base">
+                  Nome do Animal: *
+                </Text>
+              </View>
               <TextInput
                 className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800"
                 value={formData.pet_name}
@@ -311,45 +324,61 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             </View>
 
             <View className="gap-2">
-              <Text className="font-semibold text-gray-700 text-base">
-                Tipo de Anúncio: *
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="options" size={18} color="#7c3aed" />
+                <Text className="font-semibold text-gray-700 text-base">
+                  Tipo de Anúncio: *
+                </Text>
+              </View>
               <View className="flex-row gap-2">
                 <TouchableOpacity
                   onPress={() => setFormData(prev => ({ ...prev, type: 'perdido' }))}
-                  className={`flex-1 p-4 rounded-lg border-2 ${
+                  className={`flex-1 p-4 rounded-lg border-2 flex-row items-center justify-center gap-2 ${
                     formData.type === 'perdido'
                       ? 'bg-purple-600 border-purple-600'
                       : 'bg-white border-gray-300'
                   }`}
                 >
-                  <Text className={`text-center font-semibold ${
+                  <Ionicons 
+                    name="search" 
+                    size={18} 
+                    color={formData.type === 'perdido' ? '#fff' : '#374151'} 
+                  />
+                  <Text className={`font-semibold ${
                     formData.type === 'perdido' ? 'text-white' : 'text-gray-700'
                   }`}>
-                    🔍 Perdido
+                    Perdido
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setFormData(prev => ({ ...prev, type: 'encontrado' }))}
-                  className={`flex-1 p-4 rounded-lg border-2 ${
+                  className={`flex-1 p-4 rounded-lg border-2 flex-row items-center justify-center gap-2 ${
                     formData.type === 'encontrado'
                       ? 'bg-purple-600 border-purple-600'
                       : 'bg-white border-gray-300'
                   }`}
                 >
-                  <Text className={`text-center font-semibold ${
+                  <Ionicons 
+                    name="home" 
+                    size={18} 
+                    color={formData.type === 'encontrado' ? '#fff' : '#374151'} 
+                  />
+                  <Text className={`font-semibold ${
                     formData.type === 'encontrado' ? 'text-white' : 'text-gray-700'
                   }`}>
-                    🏠 Encontrado
+                    Encontrado
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View className="gap-2">
-              <Text className="font-semibold text-gray-700 text-base">
-                Descrição: *
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="document-text" size={18} color="#7c3aed" />
+                <Text className="font-semibold text-gray-700 text-base">
+                  Descrição: *
+                </Text>
+              </View>
               <TextInput
                 className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800 h-32"
                 value={formData.description}
@@ -363,14 +392,17 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
             </View>
 
             <View className="gap-2">
-              <Text className="font-semibold text-gray-700 text-base">
-                Foto do Animal:
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Ionicons name="image" size={18} color="#7c3aed" />
+                <Text className="font-semibold text-gray-700 text-base">
+                  Foto do Animal:
+                </Text>
+              </View>
               <TouchableOpacity 
                 className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg gap-3"
                 onPress={pickImage}
               >
-                <Feather name="upload" size={24} color="#4F46E5" />
+                <Ionicons name="cloud-upload" size={24} color="#7c3aed" />
                 <Text className="text-purple-600 font-semibold text-base">
                   {imageUri ? 'Alterar foto' : 'Escolher foto'}
                 </Text>
@@ -389,7 +421,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                       setImageMimeType(null);
                     }}
                   >
-                    <Feather name="x" size={16} color="#fff" />
+                    <Ionicons name="close" size={16} color="#fff" />
                   </TouchableOpacity>
                 </View>
               )}
@@ -397,14 +429,20 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
 
             {/* Seção de Localização */}
             <View className="bg-gray-50 p-5 rounded-2xl border-2 border-dashed border-gray-300">
-              <Text className="font-semibold text-gray-700 text-lg mb-4">
-                📍 Localização
-              </Text>
+              <View className="flex-row items-center gap-2 mb-4">
+                <Ionicons name="location" size={22} color="#7c3aed" />
+                <Text className="font-semibold text-gray-700 text-lg">
+                  Localização
+                </Text>
+              </View>
               
               <View className="gap-2 mb-4">
-                <Text className="font-semibold text-gray-700 text-base">
-                  Bairro: *
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Ionicons name="business" size={16} color="#7c3aed" />
+                  <Text className="font-semibold text-gray-700 text-base">
+                    Bairro: *
+                  </Text>
+                </View>
                 <TextInput
                   className="p-4 border-2 border-gray-300 rounded-lg text-base text-gray-800 bg-white"
                   value={formData.neighborhood}
@@ -418,7 +456,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 {selectedLocation ? (
                   <View className="bg-green-100 border border-green-400 rounded-lg p-4 gap-2">
                     <View className="flex-row items-center gap-2">
-                      <Feather name="check-circle" size={20} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={20} color="#15803d" />
                       <Text className="font-medium text-green-700 text-base">
                         Localização selecionada
                       </Text>
@@ -430,7 +468,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 ) : (
                   <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 gap-2">
                     <View className="flex-row items-center gap-2">
-                      <Feather name="alert-triangle" size={20} color="#F59E0B" />
+                      <Ionicons name="warning" size={20} color="#d97706" />
                       <Text className="font-medium text-yellow-700 text-base">
                         Localização obrigatória
                       </Text>
@@ -445,7 +483,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                   onPress={() => setShowLocationModal(true)}
                   className="bg-purple-600 p-4 rounded-lg flex-row items-center justify-center gap-2"
                 >
-                  <Feather name="map-pin" size={18} color="#fff" />
+                  <Ionicons name="map" size={18} color="#fff" />
                   <Text className="text-white font-semibold text-base">
                     {selectedLocation ? 'Alterar Local' : 'Escolher no Mapa'}
                   </Text>
@@ -469,7 +507,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
                 </View>
               ) : (
                 <View className="flex-row items-center gap-2">
-                  <Feather name="send" size={18} color="#fff" />
+                  <Ionicons name="send" size={18} color="#fff" />
                   <Text className="text-white font-semibold text-base">
                     Criar Anúncio
                   </Text>

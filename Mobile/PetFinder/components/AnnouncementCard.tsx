@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { updateAnnouncementStatus } from '../services/api';
 
@@ -114,24 +114,29 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
           />
         ) : (
           <View className="w-full h-full bg-gray-200 justify-center items-center">
-            <Text className="text-5xl mb-2 opacity-40">🐾</Text>
-            <Text className="text-sm text-gray-500">Sem foto</Text>
+            <Ionicons name="paw" size={60} color="#9ca3af" />
+            <Text className="text-sm text-gray-500 mt-2">Sem foto</Text>
           </View>
         )}
         
         {/* Status Badge */}
         <View className="absolute top-3 right-3">
-          <View className={`px-3 py-1.5 rounded-full ${
+          <View className={`px-3 py-1.5 rounded-full flex-row items-center gap-1 ${
             announcement.type === 'perdido' 
               ? 'bg-red-100' 
               : 'bg-green-100'
           }`}>
+            <Ionicons 
+              name={announcement.type === 'perdido' ? 'search' : 'home'} 
+              size={14} 
+              color={announcement.type === 'perdido' ? '#b91c1c' : '#15803d'} 
+            />
             <Text className={`text-xs font-semibold ${
               announcement.type === 'perdido' 
                 ? 'text-red-700' 
                 : 'text-green-700'
             }`}>
-              {announcement.type === 'perdido' ? '🔍 Perdido' : '🏠 Encontrado'}
+              {announcement.type === 'perdido' ? 'Perdido' : 'Encontrado'}
             </Text>
           </View>
         </View>
@@ -145,9 +150,10 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
             {announcement.pet_name || 'Nome não informado'}
           </Text>
           {announcement.status === 'encontrado' && (
-            <View className="bg-green-100 px-2.5 py-1 rounded-full ml-2">
+            <View className="bg-green-100 px-2.5 py-1 rounded-full ml-2 flex-row items-center gap-1">
+              <Ionicons name="checkmark-circle" size={14} color="#15803d" />
               <Text className="text-xs font-semibold text-green-700">
-                ✅ Encontrado
+                Encontrado
               </Text>
             </View>
           )}
@@ -160,7 +166,7 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
 
         {/* Localização */}
         <View className="flex-row items-center mb-4">
-          <Feather name="map-pin" size={16} color="#6B7280" />
+          <Ionicons name="location" size={16} color="#6B7280" />
           <Text className="text-sm text-gray-600 ml-2">
             {announcement.neighborhood || 'Local não informado'}
           </Text>
@@ -169,13 +175,13 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
         {/* Card de Contato */}
         <View className="bg-purple-50 p-3 rounded-xl mb-4 border border-purple-100">
           <View className="flex-row items-center gap-2 mb-1">
-            <Feather name="user" size={14} color="#7c3aed" />
+            <Ionicons name="person" size={14} color="#7c3aed" />
             <Text className="text-sm font-semibold text-gray-800">
               {announcement.user?.name || 'Nome não informado'}
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
-            <Feather name="phone" size={14} color="#7c3aed" />
+            <Ionicons name="call" size={14} color="#7c3aed" />
             <Text className="text-sm text-gray-600">
               {announcement.user?.phone || 'Telefone não informado'}
             </Text>
@@ -183,16 +189,20 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
         </View>
 
         {/* Data */}
-        <Text className="text-xs text-gray-500 mb-4">
-          Publicado em {formatDate(announcement.created_at)}
-        </Text>
+        <View className="flex-row items-center gap-1 mb-4">
+          <Ionicons name="calendar-outline" size={12} color="#9ca3af" />
+          <Text className="text-xs text-gray-500">
+            Publicado em {formatDate(announcement.created_at)}
+          </Text>
+        </View>
 
         {/* Ações */}
         <View className="gap-2">
           <TouchableOpacity
             onPress={handleViewDetail}
-            className="bg-purple-600 py-3 px-4 rounded-xl border border-purple-700 active:bg-purple-700"
+            className="bg-purple-600 py-3 px-4 rounded-xl border border-purple-700 active:bg-purple-700 flex-row items-center justify-center gap-2"
           >
+            <Ionicons name="eye" size={16} color="#fff" />
             <Text className="text-white font-semibold text-center text-sm">
               Ver Detalhes
             </Text>
@@ -202,16 +212,19 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
             <TouchableOpacity
               onPress={() => handleStatusUpdate('encontrado')}
               disabled={updating}
-              className={`bg-green-600 py-3 px-4 rounded-xl border border-green-700 active:bg-green-700 ${
+              className={`bg-green-600 py-3 px-4 rounded-xl border border-green-700 active:bg-green-700 flex-row items-center justify-center gap-2 ${
                 updating ? 'opacity-50' : ''
               }`}
             >
               {updating ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text className="text-white font-semibold text-center text-sm">
-                  ✅ Marcar como Encontrado
-                </Text>
+                <>
+                  <Ionicons name="checkmark-circle" size={16} color="#fff" />
+                  <Text className="text-white font-semibold text-center text-sm">
+                    Marcar como Encontrado
+                  </Text>
+                </>
               )}
             </TouchableOpacity>
           )}
