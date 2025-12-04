@@ -17,6 +17,15 @@ import { createAnnouncement } from '../services/api';
 import LocationPickerModal from './modal/LocationPickerModal';
 import * as FileSystem from 'expo-file-system';
 
+// --- CONSTANTES: LIMITES DE SALVADOR (Geofence) ---
+const SALVADOR_LIMITS = {
+  minLat: -13.05, // Sul (Farol da Barra e ilhas próximas)
+  maxLat: -12.70, // Norte (Divisa com Lauro de Freitas/Aeroporto)
+  minLng: -38.70, // Oeste (Baía de Todos os Santos)
+  maxLng: -38.20  // Leste (Praias do Flamengo/Stella Maris)
+};
+// --------------------------------------------------
+
 interface FormData {
   pet_name: string;
   description: string;
@@ -96,13 +105,30 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ onSuccess }) => {
   };
 
   const handleLocationConfirm = async (position: [number, number]) => {
+    const lat = position[0];
+    const lng = position[1];
+
+    // --- NOVA VALIDAÇÃO: LIMITAR A SALVADOR ---
+    if (
+      lat < SALVADOR_LIMITS.minLat || 
+      lat > SALVADOR_LIMITS.maxLat || 
+      lng < SALVADOR_LIMITS.minLng || 
+      lng > SALVADOR_LIMITS.maxLng
+    ) {
+      Alert.alert(
+        'Localização Fora da Área', 
+        'No momento, o aplicativo aceita apenas localizações em Salvador.'
+      );
+      // Não fecha o modal, permitindo ao usuário escolher novamente
+      return;
+    }
+    // ------------------------------------------
+
     setSelectedLocation(position);
     setShowLocationModal(false);
     setLoadingGeo(true); 
 
     let fullAddress = '';
-    const lat = position[0];
-    const lng = position[1];
 
     try {
       if (Platform.OS === 'web') {
