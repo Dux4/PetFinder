@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, ScrollView, Alert, Dimensions, Platform } from 'react-native';
+import { Text, View, TouchableOpacity, ScrollView, Alert, Dimensions, Platform, Modal } from 'react-native'; // <--- 1. Adicionado Modal aqui
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getAllAnnouncements, getMyAnnouncements, getCurrentUser } from '../services/api';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // <--- IMPORTANTE: Importação adicionada
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Componentes já convertidos (Mantive as importações originais)
+// Componentes
 import AnnouncementList from '../components/AnnouncementList';
 import AnnouncementDetail from '../components/AnnouncementDetail';
 import AnnouncementForm from '../components/AnnouncementForm';
 import Map from '../components/ui/Map';
 import ProfileEdit from '../components/ProfileEdit';
 
-// Interfaces (Mantidas)
+// Interfaces
 interface Announcement {
     id: number;
     title: string;
@@ -39,7 +39,6 @@ const isMobile = width < 768;
 const DashboardScreen = () => {
     const { user, logout, updateUser } = useAuth();
     
-    // <--- IMPORTANTE: Hook para pegar as medidas de segurança da tela
     const insets = useSafeAreaInsets(); 
 
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -142,18 +141,7 @@ const DashboardScreen = () => {
         },
     ];
     
-    if (selectedAnnouncement) {
-        return (
-            <AnnouncementDetail
-                announcement={selectedAnnouncement}
-                onBack={handleBackFromDetail}
-                onStatusUpdate={() => {
-                    loadData();
-                    handleBackFromDetail();
-                }}
-            />
-        );
-    }
+    // <--- REMOVIDO: O bloco "if (selectedAnnouncement) return..." foi apagado daqui.
     
     const PaginationControls = ({ 
         currentPage, 
@@ -221,7 +209,6 @@ const DashboardScreen = () => {
             colors={['#7c3aed', '#6d28d9', '#5b21b6']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            // Ajustamos o paddingTop aqui também para respeitar o notch superior
             style={{ paddingTop: Math.max(insets.top + 10, 48) }} 
             className="px-4 pb-4 shadow-lg"
         >
@@ -265,24 +252,19 @@ const DashboardScreen = () => {
                         </View>
                         <Text className="text-white text-2xl font-bold">{announcements.length}</Text>
                     </View>
-                    {/* ... outros cards mantidos iguais */}
                 </View>
             )}
         </LinearGradient>
     );
 
-    // Bottom Navigation (Mobile) - CORRIGIDO
+    // Bottom Navigation (Mobile)
     const BottomNavigation = () => {
         if (!isMobile) return null;
-
-        // Calculamos um padding extra: Se tiver safe area (iPhone X+), usa ela. 
-        // Se não tiver (Android antigo), usa 12px para não colar no fundo.
         const paddingBottomValue = Math.max(insets.bottom, 12);
 
         return (
             <View 
                 className="bg-white border-t border-gray-200 shadow-lg" 
-                // AQUI ESTÁ A CORREÇÃO PRINCIPAL
                 style={{ paddingBottom: paddingBottomValue }}
             >
                 <View className="flex-row items-center justify-around pt-2 px-2 pb-2">
@@ -329,7 +311,7 @@ const DashboardScreen = () => {
         );
     };
 
-    // Top Navigation (Web/Tablet) - Mantido
+    // Top Navigation (Web/Tablet)
     const TopNavigation = () => {
         if (isMobile) return null;
 
@@ -393,7 +375,6 @@ const DashboardScreen = () => {
         );
     };
 
-    // Section Header (Mantido)
     const SectionHeader = ({ iconName, title, subtitle }: { iconName: string; title: string; subtitle: string }) => (
         <View className="p-4 bg-white">
             <View className="flex-row items-center gap-3">
@@ -545,6 +526,26 @@ const DashboardScreen = () => {
             </View>
 
             <BottomNavigation />
+
+            {/* <--- IMPORTANTE: Modal adicionado aqui para abrir os detalhes "por cima" sem desmontar a lista */}
+            <Modal
+                visible={!!selectedAnnouncement}
+                animationType="slide"
+                presentationStyle="pageSheet" // Estilo moderno no iOS, tela cheia no Android
+                onRequestClose={handleBackFromDetail}
+            >
+                {selectedAnnouncement && (
+                    <AnnouncementDetail
+                        announcement={selectedAnnouncement}
+                        onBack={handleBackFromDetail}
+                        onStatusUpdate={() => {
+                            loadData();
+                            handleBackFromDetail();
+                        }}
+                    />
+                )}
+            </Modal>
+
         </View>
     );
 };
