@@ -1,298 +1,311 @@
-import React from 'react';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Stack } from 'expo-router';
-import "../global.css";
+import React, { useEffect, useState } from 'react';
+import { Text, View, ScrollView, TouchableOpacity, Dimensions, Platform, StatusBar, Image, ActivityIndicator } from 'react-native';
+import { useRouter, Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAllAnnouncements } from '../services/api'; 
 
-const stories = [
-  {
-    emoji: '🐕',
-    title: 'Max encontrado!',
-    subtitle: 'Barra - Salvador',
-    text: '"Perdi meu Max na praia da Barra. Em 2 dias, alguém postou aqui que tinha encontrado ele. A plataforma salvou minha família!"',
-    author: '- Maria Santos',
-  },
-  {
-    emoji: '🐱',
-    title: 'Luna voltou pra casa',
-    subtitle: 'Pituba - Salvador',
-    text: '"Minha gata Luna fugiu durante uma mudança. Graças à comunidade do Pet Finder, ela foi encontrada em apenas 1 dia!"',
-    author: '- João Silva',
-  },
-  {
-    emoji: '🐕',
-    title: 'Buddy reunificado',
-    subtitle: 'Ondina - Salvador',
-    text: '"Encontrei um cão perdido e postei aqui. Em poucas horas, a dona entrou em contato. Ver a alegria dela foi emocionante!"',
-    author: '- Ana Costa',
-  },
+interface Announcement {
+    id: number;
+    pet_name: string;
+    status: string;
+    neighborhood: string;
+    image_data?: string;
+    type: 'perdido' | 'encontrado';
+    description: string;
+}
+
+const features = [
+    { icon: 'map', title: 'Geolocalização', desc: 'Veja pets próximos a você no mapa.' },
+    { icon: 'chatbubbles', title: 'Discussões', desc: 'Comente e troque informações nos anúncios.' },
+    { icon: 'people', title: 'Comunidade', desc: 'Milhares de voluntários ativos.' },
 ];
 
-const neighborhoods = [
-  'Barra', 'Ondina', 'Rio Vermelho', 'Pituba', 'Itapuã', 'Stella Maris',
-  'Amaralina', 'Costa Azul', 'Armação', 'Pituaçu', 'Patamares', 'Vilas do Atlântico',
-  'Pelourinho', 'Terreiro de Jesus', 'Largo do Carmo', 'Santo Antônio', 'Barris', 'Graça',
-  'Vitória', 'Canela', 'Bonfim', 'Mont Serrat', 'Boa Viagem', 'Ribeira'
+const safetyTips = [
+    { icon: 'camera', text: 'Tire fotos nítidas do animal' },
+    { icon: 'location', text: 'Informe o local exato do encontro' },
+    { icon: 'time', text: 'Agilidade nos comentários ajuda muito' },
+    { icon: 'shield-checkmark', text: 'Marque encontros em locais públicos' },
 ];
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web' && width > 768;
 
 export default function LandingPage() {
-  const router = useRouter();
+    const router = useRouter();
+    const [stories, setStories] = useState<Announcement[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView className="flex-1 bg-purple-700">
-        {/* Hero Section */}
-        <View className="px-8 py-16 justify-center min-h-screen bg-purple-900">
-          <View className="mb-6">
-            <Text className="text-5xl font-bold text-white mb-2">🐾 Pet Finder Salvador</Text>
-            <Text className="text-xl text-white/90 mb-2">
-              Plataforma colaborativa para encontrar animais perdidos em Salvador
-            </Text>
-            <Text className="text-base text-white/80 mb-4">
-              Conectamos pessoas que perderam seus pets com quem os encontrou,
-              usando a força da comunidade para reunir famílias.
-            </Text>
-          </View>
+    useEffect(() => {
+        loadStories();
+    }, []);
 
-          {/* Stats Grid */}
-          <View className="flex-row justify-between my-4">
-            <View className="flex-1 text-center p-4 bg-white/10 rounded-xl mx-1">
-              <Text className="text-2xl font-bold text-white mb-2 text-center">500+</Text>
-              <Text className="text-sm text-white/80 text-center">Pets reunificados</Text>
+    const loadStories = async () => {
+        try {
+            const data = await getAllAnnouncements('encontrado');
+            setStories(data.slice(0, 5));
+        } catch (error) {
+            console.error("Erro ao carregar histórias:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const StoryCard = ({ item }: { item: Announcement }) => {
+        const fallbackEmoji = item.type === 'perdido' ? '🐕' : '🐈';
+
+        return (
+            <View className="bg-white p-4 rounded-2xl mr-4 w-44 shadow-sm border border-gray-100 items-center">
+                <View className="w-16 h-16 bg-gray-100 rounded-full items-center justify-center mb-3 overflow-hidden border-2 border-green-100">
+                    {item.image_data ? (
+                        <Image 
+                            source={{ uri: item.image_data }} 
+                            className="w-full h-full"
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <Text className="text-2xl">{fallbackEmoji}</Text>
+                    )}
+                </View>
+                
+                <Text 
+                    className="font-bold text-gray-800 text-lg mb-1 text-center" 
+                    numberOfLines={1}
+                >
+                    {item.pet_name}
+                </Text>
+                
+                <View className="bg-green-100 px-2 py-0.5 rounded-full mb-2">
+                    <Text className="text-xs text-green-700 font-bold uppercase">
+                        Encontrado
+                    </Text>
+                </View>
+
+                <View className="flex-row items-center gap-1">
+                    <Ionicons name="location-outline" size={12} color="#6b7280" />
+                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                        {item.neighborhood}
+                    </Text>
+                </View>
             </View>
-            <View className="flex-1 text-center p-4 bg-white/10 rounded-xl mx-1">
-              <Text className="text-2xl font-bold text-white mb-2 text-center">1000+</Text>
-              <Text className="text-sm text-white/80 text-center">Usuários ativos</Text>
-            </View>
-            <View className="flex-1 text-center p-4 bg-white/10 rounded-xl mx-1">
-              <Text className="text-2xl font-bold text-white mb-2 text-center">163</Text>
-              <Text className="text-sm text-white/80 text-center">Bairros cobertos</Text>
-            </View>
-          </View>
+        );
+    };
 
-          {/* Buttons */}
-          <View className="flex-row gap-4 mt-4 justify-center">
-            <TouchableOpacity 
-              className="bg-white px-8 py-4 rounded-full"
-              onPress={() => router.push('/login')}
-            >
-              <Text className="text-purple-900 text-lg font-bold text-center">Entrar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className="bg-transparent px-8 py-4 rounded-full border-2 border-white"
-              onPress={() => router.push('/register')}
-            >
-              <Text className="text-white text-lg font-bold text-center">Cadastrar-se</Text>
-            </TouchableOpacity>
-          </View>
+    return (
+        <View className="flex-1 bg-gray-50">
+            <Stack.Screen options={{ headerShown: false }} />
+            <StatusBar barStyle="light-content" />
 
-          {/* Emoji */}
-          <View className="items-center justify-center mt-8">
-            <Text className="text-[120px]">🐕🐱</Text>
-          </View>
+            <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+                
+                <LinearGradient
+                    colors={['#6d28d9', '#7c3aed', '#8b5cf6']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="pb-12 rounded-b-[40px] shadow-2xl"
+                >
+                    <SafeAreaView edges={['top']}>
+                        <View className={`px-6 pt-4 ${isWeb ? 'max-w-6xl self-center w-full' : ''}`}>
+                            <View className="flex-row justify-between items-center mb-8">
+                                <View className="flex-row items-center gap-2">
+                                    <View className="w-10 h-10 bg-white/20 rounded-xl items-center justify-center backdrop-blur-md">
+                                        <Ionicons name="paw" size={24} color="#fff" />
+                                    </View>
+                                    <Text className="text-white font-bold text-xl tracking-wider">Pet Finder</Text>
+                                </View>
+                                <TouchableOpacity 
+                                    onPress={() => router.push('/login')}
+                                    className="bg-white/20 px-4 py-2 rounded-full border border-white/30"
+                                >
+                                    <Text className="text-white font-semibold">Entrar</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View className={`mt-4 ${isWeb ? 'flex-row items-center justify-between gap-10' : ''}`}>
+                                <View className={isWeb ? 'flex-1' : ''}>
+                                    <View className="bg-orange-400 self-start px-3 py-1 rounded-full mb-4">
+                                        <Text className="text-white text-xs font-bold uppercase tracking-widest">Salvador - BA</Text>
+                                    </View>
+                                    <Text className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4">
+                                        Reunindo pets e famílias.
+                                    </Text>
+                                    <Text className="text-purple-100 text-lg mb-8 leading-6">
+                                        A maior comunidade de busca de animais perdidos da Bahia. 
+                                        Conecte-se com quem pode ajudar agora mesmo.
+                                    </Text>
+
+                                    <View className="flex-row gap-4 mb-8">
+                                        <TouchableOpacity 
+                                            activeOpacity={0.9}
+                                            onPress={() => router.push('/register')}
+                                            className="bg-white px-8 py-4 rounded-2xl shadow-lg shadow-purple-900/20 flex-1 md:flex-none items-center flex-row justify-center gap-2"
+                                        >
+                                            <Text className="text-purple-700 font-bold text-lg">Criar Conta</Text>
+                                            <Ionicons name="arrow-forward" size={20} color="#7c3aed" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity 
+                                            activeOpacity={0.7}
+                                            onPress={() => router.push('/login')}
+                                            className="bg-purple-800/40 border border-purple-400/30 px-6 py-4 rounded-2xl flex-1 md:flex-none items-center justify-center"
+                                        >
+                                            <Text className="text-white font-semibold text-lg">Tenho conta</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <View className={`bg-white/10 p-6 rounded-3xl border border-white/20 backdrop-blur-md ${isWeb ? 'w-80' : 'w-full'}`}>
+                                    <View className="flex-row justify-between items-center mb-4 border-b border-white/10 pb-4">
+                                        <View>
+                                            <Text className="text-2xl font-bold text-white">100%</Text>
+                                            <Text className="text-purple-200 text-xs">Gratuito</Text>
+                                        </View>
+                                        <View className="w-10 h-10 bg-green-400 rounded-full items-center justify-center">
+                                            <Ionicons name="pricetag" size={20} color="#fff" />
+                                        </View>
+                                    </View>
+                                    <View className="flex-row justify-between items-center">
+                                        <View>
+                                            <Text className="text-xl font-bold text-white">Comunidade</Text>
+                                            <Text className="text-purple-200 text-xs">Ativa e Solidária</Text>
+                                        </View>
+                                        <View className="w-10 h-10 bg-blue-400 rounded-full items-center justify-center">
+                                            <Ionicons name="people" size={20} color="#fff" />
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    </SafeAreaView>
+                </LinearGradient>
+
+                <View className={`flex-1 ${isWeb ? 'max-w-6xl self-center w-full px-6' : ''}`}>
+
+                    <View className="mt-8 px-6">
+                        <View className="flex-row justify-between items-end mb-4">
+                            <Text className="text-xl font-bold text-gray-800">Reencontros Recentes</Text>
+                        </View>
+                        
+                        {loading ? (
+                            <View className="h-[160px] items-center justify-center">
+                                <ActivityIndicator size="large" color="#7c3aed" />
+                                <Text className="text-gray-400 text-sm mt-2">Buscando histórias...</Text>
+                            </View>
+                        ) : stories.length === 0 ? (
+                            <View className="bg-white p-6 rounded-2xl items-center border border-gray-100">
+                                <Text className="text-gray-500">Nenhum pet encontrado recentemente.</Text>
+                            </View>
+                        ) : (
+                            <ScrollView 
+                                horizontal 
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={{ paddingRight: 20 }}
+                                className="overflow-visible"
+                            >
+                                {stories.map((story) => (
+                                    <StoryCard key={story.id} item={story} />
+                                ))}
+                                
+                                <TouchableOpacity 
+                                    onPress={() => router.push('/login')}
+                                    className="bg-purple-50 p-4 rounded-2xl mr-4 w-32 items-center justify-center border border-purple-100"
+                                >
+                                    <View className="w-12 h-12 bg-white rounded-full items-center justify-center mb-2 shadow-sm">
+                                        <Ionicons name="heart" size={24} color="#7c3aed" />
+                                    </View>
+                                    <Text className="text-purple-700 font-bold text-center">Ver todos</Text>
+                                    <Text className="text-purple-400 text-xs text-center">Faça Login</Text>
+                                </TouchableOpacity>
+                            </ScrollView>
+                        )}
+                    </View>
+
+                    {/* --- AQUI ESTÁ A NOVA SEÇÃO: COMO FUNCIONA --- */}
+                    <View className="mt-10 px-6">
+                        <Text className="text-xl font-bold text-gray-800 mb-6">Como funciona a plataforma?</Text>
+                        <View className="flex-col gap-4">
+                            
+                            {/* Card: PERDI MEU PET */}
+                            <View className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex-row gap-4 items-start">
+                                <View className="bg-red-100 w-12 h-12 rounded-full items-center justify-center shrink-0">
+                                    <Ionicons name="search" size={24} color="#dc2626" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="font-bold text-gray-800 text-lg mb-1">Perdi meu Pet</Text>
+                                    <Text className="text-gray-600 leading-5">
+                                        Selecione a opção <Text className="font-bold text-red-600">Perdido</Text> no cadastro. A comunidade será alertada com a foto e local.
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Card: ENCONTREI UM PET */}
+                            <View className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex-row gap-4 items-start">
+                                <View className="bg-green-100 w-12 h-12 rounded-full items-center justify-center shrink-0">
+                                    <Ionicons name="home" size={24} color="#16a34a" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="font-bold text-gray-800 text-lg mb-1">Encontrei um Pet</Text>
+                                    <Text className="text-gray-600 leading-5">
+                                        Viu um animal sozinho? Selecione <Text className="font-bold text-green-600">Encontrado</Text>, tire uma foto e marque o local.
+                                    </Text>
+                                </View>
+                            </View>
+
+                        </View>
+                    </View>
+                    {/* --------------------------------------------- */}
+
+                    <View className="mt-10 px-6">
+                        <Text className="text-xl font-bold text-gray-800 mb-6">Recursos Úteis</Text>
+                        <View className={`flex-row flex-wrap gap-4 ${isWeb ? 'justify-between' : ''}`}>
+                            {features.map((feature, index) => (
+                                <View key={index} className={`bg-white p-5 rounded-2xl border border-gray-100 shadow-sm ${isWeb ? 'flex-1' : 'w-full'}`}>
+                                    <View className="w-12 h-12 bg-purple-50 rounded-xl items-center justify-center mb-4">
+                                        <Ionicons name={feature.icon as any} size={24} color="#7c3aed" />
+                                    </View>
+                                    <Text className="text-lg font-bold text-gray-800 mb-2">{feature.title}</Text>
+                                    <Text className="text-gray-500 leading-5">{feature.desc}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
+                    <View className="mt-10 px-6 mb-12">
+                        <Text className="text-xl font-bold text-gray-800 mb-4">Dicas de Segurança</Text>
+                        <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            {safetyTips.map((tip, index) => (
+                                <View key={index} className={`flex-row items-center py-3 ${index !== safetyTips.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                    <View className="w-8 h-8 bg-green-50 rounded-full items-center justify-center mr-4">
+                                        <Ionicons name={tip.icon as any} size={16} color="#15803d" />
+                                    </View>
+                                    <Text className="text-gray-600 font-medium flex-1">{tip.text}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
+                    <View className="px-6 mb-20">
+                        <LinearGradient
+                            colors={['#1f2937', '#111827']}
+                            className="rounded-3xl p-8 relative overflow-hidden"
+                        >
+                            <View className="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/20 rounded-full blur-3xl" />
+                            <View className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl" />
+
+                            <Text className="text-white font-bold text-2xl mb-2">Viu um pet perdido?</Text>
+                            <Text className="text-gray-400 mb-6">Ajude a devolver a alegria para uma família hoje mesmo.</Text>
+                            
+                            <TouchableOpacity 
+                                onPress={() => router.push('/register')}
+                                className="bg-white py-4 rounded-xl items-center"
+                            >
+                                <Text className="text-gray-900 font-bold text-lg">Reportar Agora</Text>
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    </View>
+
+                </View>
+            </ScrollView>
         </View>
-
-        {/* Success Stories Section */}
-        <View className="bg-purple-700 py-16 px-8">
-          <Text className="text-center text-4xl font-bold text-white mb-12">
-            Histórias de Sucesso
-          </Text>
-          <View className="flex-col gap-4">
-            {stories.map((story, index) => (
-              <View key={index} className="bg-white/10 rounded-xl p-6">
-                <View className="flex-row items-center mb-4">
-                  <View className={`w-12 h-12 rounded-full items-center justify-center ${
-                    story.emoji === '🐕' ? 'bg-orange-400' : 'bg-pink-500'
-                  }`}>
-                    <Text className="text-2xl">{story.emoji}</Text>
-                  </View>
-                  <View className="ml-4">
-                    <Text className="font-bold text-white">{story.title}</Text>
-                    <Text className="text-sm text-white/80">{story.subtitle}</Text>
-                  </View>
-                </View>
-                <Text className="text-sm leading-5 text-white/90 mb-3">{story.text}</Text>
-                <Text className="text-xs text-white/70">{story.author}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Neighborhoods Section */}
-        <View className="bg-gray-50 py-16 px-8">
-          <Text className="text-center text-4xl font-bold text-indigo-600 mb-4">
-            Cobrimos Salvador Inteira
-          </Text>
-          <Text className="text-center text-gray-600 mb-12 text-base">
-            Nossa rede de voluntários está presente em todos os bairros da cidade
-          </Text>
-          <View className="flex-row flex-wrap justify-center gap-4 mb-12">
-            {neighborhoods.map((bairro, index) => (
-              <View key={index} className="bg-white rounded-lg px-3 py-2 shadow-sm">
-                <Text className="text-sm font-medium text-gray-600">{bairro}</Text>
-              </View>
-            ))}
-          </View>
-          <View className="text-center items-center">
-            <Text className="text-gray-600 mb-4">E muitos outros bairros!</Text>
-            <View className="flex-row items-center bg-indigo-50 rounded-full px-6 py-3">
-              <Text className="text-indigo-600 font-semibold">163 bairros cobertos</Text>
-              <Text className="ml-2 text-2xl">🗺️</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Tips Section */}
-        <View className="bg-purple-900 py-16 px-8">
-          <Text className="text-center text-4xl font-bold text-white mb-12">
-            Dicas Importantes
-          </Text>
-          <View className="flex-col gap-8">
-            {/* Lost Pet Card */}
-            <View className="bg-white rounded-2xl p-8 shadow-lg">
-              <View className="flex-row items-center mb-6">
-                <View className="w-16 h-16 bg-red-500 rounded-full items-center justify-center shadow-lg">
-                  <Text className="text-2xl">🚨</Text>
-                </View>
-                <Text className="ml-4 text-xl font-bold text-gray-800">Pet Perdido?</Text>
-              </View>
-              <View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Poste uma foto clara e recente do seu pet
-                  </Text>
-                </View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Inclua o bairro e pontos de referência
-                  </Text>
-                </View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Descreva características únicas (coleira, cicatrizes, etc.)
-                  </Text>
-                </View>
-                <View className="flex-row items-start">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Mantenha o post atualizado
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Found Pet Card */}
-            <View className="bg-white rounded-2xl p-8 shadow-lg">
-              <View className="flex-row items-center mb-6">
-                <View className="w-16 h-16 bg-green-500 rounded-full items-center justify-center shadow-lg">
-                  <Text className="text-2xl">✅</Text>
-                </View>
-                <Text className="ml-4 text-xl font-bold text-gray-800">Encontrou um Pet?</Text>
-              </View>
-              <View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Tire fotos do animal encontrado
-                  </Text>
-                </View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Mantenha o pet em segurança
-                  </Text>
-                </View>
-                <View className="flex-row items-start mb-2">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Procure por coleiras com identificação
-                  </Text>
-                </View>
-                <View className="flex-row items-start">
-                  <Text className="text-indigo-600 font-bold text-lg mr-3">•</Text>
-                  <Text className="text-gray-700 leading-6 flex-shrink">
-                    Poste o local exato onde encontrou
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* How It Works Section */}
-        <View className="bg-white py-16 px-8">
-          <Text className="text-center text-4xl font-bold text-indigo-600 mb-12">
-            Como Funciona
-          </Text>
-          <View className="flex-col gap-12">
-            <View className="bg-white rounded-2xl p-8 shadow-xl text-center items-center">
-              <Text className="text-5xl mb-4">📍</Text>
-              <Text className="text-xl font-bold text-indigo-600 mb-4">Cadastre o Local</Text>
-              <Text className="text-gray-600 leading-6 text-center">
-                Informe o bairro onde o pet foi perdido ou encontrado
-              </Text>
-            </View>
-            <View className="bg-white rounded-2xl p-8 shadow-xl text-center items-center">
-              <Text className="text-5xl mb-4">📸</Text>
-              <Text className="text-xl font-bold text-indigo-600 mb-4">Adicione uma Foto</Text>
-              <Text className="text-gray-600 leading-6 text-center">
-                Uma imagem vale mais que mil palavras na identificação
-              </Text>
-            </View>
-            <View className="bg-white rounded-2xl p-8 shadow-xl text-center items-center">
-              <Text className="text-5xl mb-4">🤝</Text>
-              <Text className="text-xl font-bold text-indigo-600 mb-4">Conecte-se</Text>
-              <Text className="text-gray-600 leading-6 text-center">
-                A comunidade te ajuda a encontrar ou devolver o pet
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* CTA Section */}
-        <View className="bg-purple-950 py-16 px-8">
-          <View className="text-center items-center">
-            <Text className="text-4xl font-bold text-white mb-6 text-center">
-              Faça Parte da Nossa Comunidade
-            </Text>
-            <Text className="text-xl text-white/90 mb-8 text-center">
-              Juntos, podemos reunir mais famílias com seus pets queridos
-            </Text>
-            <View className="flex-col gap-4 items-center mb-8">
-              <TouchableOpacity 
-                className="px-10 py-4 bg-white rounded-full"
-                onPress={() => router.push('/register')}
-              >
-                <Text className="text-purple-950 text-xl font-bold">Começar Agora 🚀</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                className="px-10 py-4 bg-transparent rounded-full border-2 border-white"
-                onPress={() => router.push('/login')}
-              >
-                <Text className="text-white text-xl font-bold">Já tenho conta</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="flex-row justify-center flex-wrap gap-6 w-full opacity-80">
-              <View className="flex-row items-center gap-2 min-w-[150px] justify-center">
-                <Text className="text-base">📱</Text>
-                <Text className="text-sm text-white">App móvel em breve</Text>
-              </View>
-              <View className="flex-row items-center gap-2 min-w-[150px] justify-center">
-                <Text className="text-base">🔒</Text>
-                <Text className="text-sm text-white">100% gratuito e seguro</Text>
-              </View>
-              <View className="flex-row items-center gap-2 min-w-[150px] justify-center">
-                <Text className="text-base">⚡</Text>
-                <Text className="text-sm text-white">Resultados rápidos</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </>
-  );
+    );
 }

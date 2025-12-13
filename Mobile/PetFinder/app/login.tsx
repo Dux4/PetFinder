@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient'; // Certifique-se de ter instalado: npx expo install expo-linear-gradient
+import { LinearGradient } from 'expo-linear-gradient';
 import { login as loginApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -32,7 +32,7 @@ const LoginScreen = () => {
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
-    const [showPassword, setShowPassword] = useState(false); // Novo estado para mostrar/ocultar senha
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async () => {
         setLoading(true);
@@ -66,12 +66,25 @@ const LoginScreen = () => {
             {/* Fundo com Gradiente seguindo a identidade do Dashboard */}
             <LinearGradient
                 colors={['#7c3aed', '#6d28d9', '#4c1d95']}
-                className="flex-1 justify-center items-center px-6"
+                className="flex-1 px-6"
             >
+                {/* Botão Voltar */}
+                <View className="pt-12 pb-4">
+                    <TouchableOpacity 
+                        onPress={() => router.back()}
+                        className="flex-row items-center gap-3 active:opacity-70"
+                    >
+                        <View className="w-10 h-10 bg-white/20 rounded-full items-center justify-center">
+                            <Ionicons name="arrow-back" size={24} color="#fff" />
+                        </View>
+                        <Text className="text-white text-base font-semibold">Voltar</Text>
+                    </TouchableOpacity>
+                </View>
+
                 <ScrollView 
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} 
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: 40 }} 
                     showsVerticalScrollIndicator={false}
-                    className="w-full max-w-[450px]"
+                    className="w-full"
                 >
                     <View className="bg-white p-8 rounded-3xl shadow-2xl w-full">
                         
@@ -136,16 +149,6 @@ const LoginScreen = () => {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-
-                            {/* Área de Usuários de Teste (Design Melhorado)
-                            <View className="bg-blue-50 p-4 rounded-xl border border-blue-100 mt-2">
-                                <View className="flex-row items-center gap-2 mb-2">
-                                    <Ionicons name="information-circle" size={20} color="#3b82f6" />
-                                    <Text className="font-semibold text-blue-800">Acesso Rápido (Teste)</Text>
-                                </View>
-                                <Text className="text-xs text-blue-700 font-medium">📧 maria@email.com • 🔑 123456</Text>
-                                <Text className="text-xs text-blue-700 font-medium mt-1">📧 joao@email.com • 🔑 123456</Text>
-                            </View> */}
 
                             {/* Botão de Login */}
                             <TouchableOpacity
