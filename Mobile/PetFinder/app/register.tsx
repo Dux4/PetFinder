@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator } from 'react-native';
+import { 
+  Text, 
+  View, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  ScrollView, 
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar
+} from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context'; // Recomendado para garantir posição correta do botão voltar
 import { register } from '../services/api'; 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -24,6 +38,9 @@ const RegisterScreen = () => {
     });
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    
+    const [showPass, setShowPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     const handleSubmit = async () => {
         if (formData.password !== formData.confirmPassword) {
@@ -40,12 +57,10 @@ const RegisterScreen = () => {
             
             authLogin(response.token, response.user);
             
-            setMessage('Sucesso! Conta criada com sucesso.');
             Alert.alert('Sucesso', 'Conta criada com sucesso!');
-            
             router.push('/dashboard'); 
         } catch (err: any) {
-            setMessage(err?.response?.data?.error || 'Erro ao criar conta');
+            setMessage(err?.response?.data?.error || 'Erro ao criar conta. Tente novamente.');
         } finally {
             setLoading(false);
         }
@@ -58,112 +73,179 @@ const RegisterScreen = () => {
         }));
     };
 
-    return (
-        <View className="flex-1 bg-purple-700">
-            <Stack.Screen options={{ headerShown: false }} />
-            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
-                <View className="bg-white p-12 rounded-2xl w-full max-w-[450px] shadow-2xl">
-                    <TouchableOpacity onPress={() => router.back()} className="absolute top-4 left-4 p-2">
-                        <Text className="text-purple-700 text-base font-semibold">← Voltar</Text>
+    // Componente Input reutilizável
+    const InputField = ({ 
+        label, 
+        icon, 
+        value, 
+        onChange, 
+        placeholder, 
+        isPassword = false, 
+        showPassword = false, 
+        togglePassword,
+        keyboardType = 'default' 
+    }: any) => (
+        <View className="mb-4">
+            <Text className="mb-1.5 font-semibold text-gray-700 ml-1 text-sm">{label}</Text>
+            <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 h-12 focus:border-purple-500">
+                <Ionicons name={icon} size={20} color="#9ca3af" />
+                <TextInput
+                    className="flex-1 ml-3 text-gray-800 text-base h-full"
+                    placeholder={placeholder}
+                    placeholderTextColor="#9CA3AF"
+                    value={value}
+                    onChangeText={onChange}
+                    secureTextEntry={isPassword && !showPassword}
+                    keyboardType={keyboardType}
+                    autoCapitalize={icon === 'mail-outline' ? 'none' : 'words'}
+                />
+                {isPassword && (
+                    <TouchableOpacity onPress={togglePassword} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                        <Ionicons 
+                            name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                            size={20} 
+                            color="#9ca3af" 
+                        />
                     </TouchableOpacity>
+                )}
+            </View>
+        </View>
+    );
 
-                    <Text className="text-center text-gray-800 mb-8 text-3xl font-bold">
-                        Criar Conta
-                    </Text>
-
-                    {message ? (
-                        <View className={`p-4 rounded-lg mb-4 ${message.includes('Sucesso') ? 'bg-green-100' : 'bg-red-100'}`}>
-                            <Text className={`text-center ${message.includes('Sucesso') ? 'text-green-600' : 'text-red-600'}`}>
-                                {message}
-                            </Text>
-                        </View>
-                    ) : null}
-
-                    <View className="gap-6">
+    return (
+        <View className="flex-1 bg-purple-800">
+            <Stack.Screen options={{ headerShown: false }} />
+            <StatusBar barStyle="light-content" />
+            
+            {/* 1. Header Fixo com Gradiente (Ocupa o topo) */}
+            <LinearGradient
+                colors={['#7c3aed', '#6d28d9', '#5b21b6']}
+                className="pb-8 pt-2"
+            >
+                <SafeAreaView edges={['top', 'left', 'right']}>
+                    <View className="px-6 flex-row items-center gap-4 pt-2">
+                        {/* Botão Voltar Ajustado */}
+                        <TouchableOpacity 
+                            onPress={() => router.back()}
+                            className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:bg-white/30"
+                        >
+                            <Ionicons name="arrow-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        
                         <View>
-                            <Text className="mb-2 font-semibold text-gray-700">Nome Completo:</Text>
-                            <TextInput
-                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
-                                placeholder="Seu nome completo"
-                                placeholderTextColor="#9CA3AF"
+                            <Text className="text-white text-2xl font-bold">Criar Conta</Text>
+                            <Text className="text-purple-200 text-sm">Preencha seus dados abaixo</Text>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
+
+            {/* 2. Corpo Branco Arredondado (Ocupa o resto da tela) */}
+            <View className="flex-1 bg-white rounded-t-[32px] -mt-6 overflow-hidden shadow-2xl">
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView 
+                        contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        {message ? (
+                            <View className={`p-4 rounded-xl mb-6 flex-row items-center gap-2 border ${
+                                message.includes('Sucesso') ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                            }`}>
+                                <Ionicons 
+                                    name={message.includes('Sucesso') ? "checkmark-circle" : "alert-circle"} 
+                                    size={20} 
+                                    color={message.includes('Sucesso') ? "#15803d" : "#dc2626"} 
+                                />
+                                <Text className={`flex-1 font-medium text-sm ${
+                                    message.includes('Sucesso') ? 'text-green-700' : 'text-red-700'
+                                }`}>
+                                    {message}
+                                </Text>
+                            </View>
+                        ) : null}
+
+                        <View>
+                            <InputField 
+                                label="Nome Completo"
+                                icon="person-outline"
                                 value={formData.name}
-                                onChangeText={(text) => handleInputChange('name', text)}
-                                autoCapitalize="words"
+                                onChange={(t: string) => handleInputChange('name', t)}
+                                placeholder="Seu nome completo"
                             />
-                        </View>
 
-                        <View>
-                            <Text className="mb-2 font-semibold text-gray-700">Email:</Text>
-                            <TextInput
-                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
-                                placeholder="seu@email.com"
-                                placeholderTextColor="#9CA3AF"
+                            <InputField 
+                                label="Email"
+                                icon="mail-outline"
                                 value={formData.email}
-                                onChangeText={(text) => handleInputChange('email', text)}
+                                onChange={(t: string) => handleInputChange('email', t)}
+                                placeholder="seu@email.com"
                                 keyboardType="email-address"
-                                autoCapitalize="none"
                             />
-                        </View>
 
-                        <View>
-                            <Text className="mb-2 font-semibold text-gray-700">Telefone:</Text>
-                            <TextInput
-                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
-                                placeholder="(71) 99999-9000"
-                                placeholderTextColor="#9CA3AF"
+                            <InputField 
+                                label="Telefone"
+                                icon="call-outline"
                                 value={formData.phone}
-                                onChangeText={(text) => handleInputChange('phone', text)}
+                                onChange={(t: string) => handleInputChange('phone', t)}
+                                placeholder="(71) 99999-9000"
                                 keyboardType="phone-pad"
                             />
-                        </View>
 
-                        <View>
-                            <Text className="mb-2 font-semibold text-gray-700">Senha:</Text>
-                            <TextInput
-                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
-                                placeholder="Mínimo 6 caracteres"
-                                placeholderTextColor="#9CA3AF"
+                            <InputField 
+                                label="Senha"
+                                icon="lock-closed-outline"
                                 value={formData.password}
-                                onChangeText={(text) => handleInputChange('password', text)}
-                                secureTextEntry
+                                onChange={(t: string) => handleInputChange('password', t)}
+                                placeholder="Mínimo 6 caracteres"
+                                isPassword={true}
+                                showPassword={showPass}
+                                togglePassword={() => setShowPass(!showPass)}
                             />
-                        </View>
 
-                        <View>
-                            <Text className="mb-2 font-semibold text-gray-700">Confirmar Senha:</Text>
-                            <TextInput
-                                className="p-4 border-2 border-gray-200 rounded-lg text-base bg-white"
-                                placeholder="Digite a senha novamente"
-                                placeholderTextColor="#9CA3AF"
+                            <InputField 
+                                label="Confirmar Senha"
+                                icon="shield-checkmark-outline"
                                 value={formData.confirmPassword}
-                                onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                                secureTextEntry
+                                onChange={(t: string) => handleInputChange('confirmPassword', t)}
+                                placeholder="Repita a senha"
+                                isPassword={true}
+                                showPassword={showConfirmPass}
+                                togglePassword={() => setShowConfirmPass(!showConfirmPass)}
                             />
+
+                            <TouchableOpacity
+                                className={`h-14 rounded-xl items-center justify-center mt-4 shadow-lg shadow-purple-200 ${
+                                    loading ? 'bg-purple-400' : 'bg-purple-700'
+                                }`}
+                                onPress={handleSubmit}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#fff" />
+                                ) : (
+                                    <Text className="text-white text-lg font-bold">Criar Conta</Text>
+                                )}
+                            </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity
-                            className={`p-4 rounded-lg items-center ${loading ? 'bg-purple-700 opacity-60' : 'bg-purple-700'}`}
-                            onPress={handleSubmit}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="text-white text-base font-semibold">Criar Conta</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="flex-row justify-center mt-8 items-center">
-                        <Text className="text-gray-600">Já tem conta? </Text>
-                        <TouchableOpacity onPress={() => router.push('/login')}>
-                            <Text className="text-purple-700 font-semibold underline ml-2">
-                                Faça login aqui
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
+                        <View className="flex-row justify-center mt-6 items-center">
+                            <Text className="text-gray-500">Já tem conta? </Text>
+                            <TouchableOpacity onPress={() => router.push('/login')}>
+                                <Text className="text-purple-700 font-bold ml-1">
+                                    Faça login
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {/* Espaço extra no final para garantir que o teclado não cubra o botão se a tela for pequena */}
+                        <View className="h-6" />
+                    </ScrollView>
+                </KeyboardAvoidingView>
+            </View>
         </View>
     );
 };
