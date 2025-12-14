@@ -14,7 +14,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Recomendado para garantir posição correta do botão voltar
+import { SafeAreaView } from 'react-native-safe-area-context'; 
 import { register } from '../services/api'; 
 import { useAuth } from '../contexts/AuthContext';
 
@@ -25,6 +25,47 @@ type FormData = {
     confirmPassword: string;
     phone: string;
 }
+
+// --- Componente InputField (Mantido fora para evitar o bug do teclado) ---
+const InputField = ({ 
+    label, 
+    icon, 
+    value, 
+    onChange, 
+    placeholder, 
+    isPassword = false, 
+    showPassword = false, 
+    togglePassword,
+    keyboardType = 'default',
+    maxLength // Adicionado suporte para maxLength
+}: any) => (
+    <View className="mb-4">
+        <Text className="mb-1.5 font-semibold text-gray-700 ml-1 text-sm">{label}</Text>
+        <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 h-12 focus:border-purple-500">
+            <Ionicons name={icon} size={20} color="#9ca3af" />
+            <TextInput
+                className="flex-1 ml-3 text-gray-800 text-base h-full"
+                placeholder={placeholder}
+                placeholderTextColor="#9CA3AF"
+                value={value}
+                onChangeText={onChange}
+                secureTextEntry={isPassword && !showPassword}
+                keyboardType={keyboardType}
+                autoCapitalize={icon === 'mail-outline' ? 'none' : 'words'}
+                maxLength={maxLength} // Usando o limite de caracteres
+            />
+            {isPassword && (
+                <TouchableOpacity onPress={togglePassword} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                    <Ionicons 
+                        name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                        size={20} 
+                        color="#9ca3af" 
+                    />
+                </TouchableOpacity>
+            )}
+        </View>
+    </View>
+);
 
 const RegisterScreen = () => {
     const router = useRouter();
@@ -42,7 +83,32 @@ const RegisterScreen = () => {
     const [showPass, setShowPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
 
+    // --- NOVA FUNÇÃO: Formatação de Telefone ---
+    const formatPhone = (text: string) => {
+        // 1. Remove tudo que não é número
+        const cleaned = text.replace(/\D/g, '');
+        
+        // 2. Limita a 11 dígitos (DDD + 9 dígitos)
+        const match = cleaned.substring(0, 11);
+
+        // 3. Aplica a máscara progressivamente
+        if (match.length <= 2) {
+            return match;
+        } else if (match.length <= 7) {
+            return `(${match.slice(0, 2)}) ${match.slice(2)}`;
+        } else {
+            return `(${match.slice(0, 2)}) ${match.slice(2, 7)}-${match.slice(7)}`;
+        }
+    };
+
     const handleSubmit = async () => {
+        // Validação simples de tamanho do telefone antes de enviar
+        const rawPhone = formData.phone.replace(/\D/g, '');
+        if (rawPhone.length < 10) {
+             setMessage('Por favor, insira um telefone válido com DDD.');
+             return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
             setMessage('As senhas não coincidem');
             return;
@@ -52,7 +118,11 @@ const RegisterScreen = () => {
         setMessage('');
 
         try {
+            // Remove a confirmação de senha e envia os dados
+            // Opcional: enviar o phone limpo (apenas números) para a API:
+            // const submitData = { ...formData, phone: rawPhone };
             const { confirmPassword, ...submitData } = formData;
+            
             const response = await register(submitData);
             
             authLogin(response.token, response.user);
@@ -67,64 +137,30 @@ const RegisterScreen = () => {
     };
 
     const handleInputChange = (name: keyof FormData, value: string) => {
+        let text = value;
+
+        // Se o campo for telefone, aplica a formatação
+        if (name === 'phone') {
+            text = formatPhone(value);
+        }
+
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: text
         }));
     };
-
-    // Componente Input reutilizável
-    const InputField = ({ 
-        label, 
-        icon, 
-        value, 
-        onChange, 
-        placeholder, 
-        isPassword = false, 
-        showPassword = false, 
-        togglePassword,
-        keyboardType = 'default' 
-    }: any) => (
-        <View className="mb-4">
-            <Text className="mb-1.5 font-semibold text-gray-700 ml-1 text-sm">{label}</Text>
-            <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 h-12 focus:border-purple-500">
-                <Ionicons name={icon} size={20} color="#9ca3af" />
-                <TextInput
-                    className="flex-1 ml-3 text-gray-800 text-base h-full"
-                    placeholder={placeholder}
-                    placeholderTextColor="#9CA3AF"
-                    value={value}
-                    onChangeText={onChange}
-                    secureTextEntry={isPassword && !showPassword}
-                    keyboardType={keyboardType}
-                    autoCapitalize={icon === 'mail-outline' ? 'none' : 'words'}
-                />
-                {isPassword && (
-                    <TouchableOpacity onPress={togglePassword} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                        <Ionicons 
-                            name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                            size={20} 
-                            color="#9ca3af" 
-                        />
-                    </TouchableOpacity>
-                )}
-            </View>
-        </View>
-    );
 
     return (
         <View className="flex-1 bg-purple-800">
             <Stack.Screen options={{ headerShown: false }} />
             <StatusBar barStyle="light-content" />
             
-            {/* 1. Header Fixo com Gradiente (Ocupa o topo) */}
             <LinearGradient
                 colors={['#7c3aed', '#6d28d9', '#5b21b6']}
                 className="pb-8 pt-2"
             >
                 <SafeAreaView edges={['top', 'left', 'right']}>
                     <View className="px-6 flex-row items-center gap-4 pt-2">
-                        {/* Botão Voltar Ajustado */}
                         <TouchableOpacity 
                             onPress={() => router.back()}
                             className="w-10 h-10 bg-white/20 rounded-full items-center justify-center active:bg-white/30"
@@ -140,7 +176,6 @@ const RegisterScreen = () => {
                 </SafeAreaView>
             </LinearGradient>
 
-            {/* 2. Corpo Branco Arredondado (Ocupa o resto da tela) */}
             <View className="flex-1 bg-white rounded-t-[32px] -mt-6 overflow-hidden shadow-2xl">
                 <KeyboardAvoidingView 
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -186,13 +221,15 @@ const RegisterScreen = () => {
                                 keyboardType="email-address"
                             />
 
+                            {/* Campo de Telefone Atualizado */}
                             <InputField 
                                 label="Telefone"
                                 icon="call-outline"
                                 value={formData.phone}
                                 onChange={(t: string) => handleInputChange('phone', t)}
-                                placeholder="(71) 99999-9000"
-                                keyboardType="phone-pad"
+                                placeholder="(DDD) 99999-9999"
+                                keyboardType="numeric" 
+                                maxLength={15} // (11) 99999-9999 são 15 caracteres
                             />
 
                             <InputField 
@@ -200,7 +237,7 @@ const RegisterScreen = () => {
                                 icon="lock-closed-outline"
                                 value={formData.password}
                                 onChange={(t: string) => handleInputChange('password', t)}
-                                placeholder="Mínimo 6 caracteres"
+                                placeholder="Mínimo 8 caracteres"
                                 isPassword={true}
                                 showPassword={showPass}
                                 togglePassword={() => setShowPass(!showPass)}
@@ -241,7 +278,6 @@ const RegisterScreen = () => {
                             </TouchableOpacity>
                         </View>
                         
-                        {/* Espaço extra no final para garantir que o teclado não cubra o botão se a tela for pequena */}
                         <View className="h-6" />
                     </ScrollView>
                 </KeyboardAvoidingView>
